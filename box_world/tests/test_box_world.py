@@ -9,7 +9,7 @@ def test_simple_empty_world():
     goal_node = rrt.build_tree_to_goal_state(goal)
     # print(goal_node.parent.parent)
     ax, fig = rrt.visualize()
-    plt.show()
+    # plt.show()
 
 def test_fixed_very_boxy_world():
     root = np.asarray([1,0.5])
@@ -28,7 +28,7 @@ def test_fixed_very_boxy_world():
     goal_node = rrt.build_tree_to_goal_state(goal)
     # print(goal_node.parent.parent)
     ax, fig = rrt.visualize()
-    plt.show()
+    # plt.show()
 
 if __name__ == '__main__':
     test_fixed_very_boxy_world()

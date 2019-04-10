@@ -1,5 +1,5 @@
 from common.rg_rrt_star import *
-from bounding_box_closest_polytope.lib.box import AABB, point_to_box_distance
+from bounding_box_closest_polytope.lib.box import AABB, point_in_box
 from bounding_box_closest_polytope.visualization.visualize import visualize_boxes
 from rtree import index
 import matplotlib.pyplot as plt
@@ -36,7 +36,7 @@ class BoxWorldMap:
     def point_collides_with_obstacle(self, point):
         for obs in self.obstacles:
             # print(point)
-            if point_to_box_distance(point, obs) == 0.:
+            if point_in_box(point, obs):
                 return True
         return False
 
