@@ -3,6 +3,7 @@ from rtree import index
 import matplotlib.pyplot as plt
 from matplotlib import collections  as mc
 from collections import deque
+import pickle
 
 class DC_Path(Path):
     def __init__(self):
@@ -19,7 +20,7 @@ class DC_ReachableSet(ReachableSet):
     '''
     Base class of ReachableSet
     '''
-    def __init__(self,path_class):#, state, planner, in_set, collision_test):
+    def __init__(self,base_reachable_set):#, state, planner, in_set, collision_test):
         '''
 
         :param state: The state this reachable set belongs to
