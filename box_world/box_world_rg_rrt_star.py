@@ -65,7 +65,7 @@ class BWReachabelSet(ReachableSet):
     def __init__(self, state, world_map):
         ReachableSet.__init__(self, BW_Path)
         self.state = state
-        self.reachable_range = 1 #arbitrary parameter
+        self.reachable_range = 3 #arbitrary parameter
         self.world_map = world_map
 
     def contains(self, goal_state):
@@ -119,7 +119,7 @@ class BW_StateTree(StateTree):
 
 
 class BW_RGRRTStar(RGRRTStar):
-    def __init__(self, root_state, world_map):
+    def __init__(self, root_state, world_map,rewire_radius):
         '''
         Base RG-RRT*
         :param root_state: The root state
@@ -130,7 +130,7 @@ class BW_RGRRTStar(RGRRTStar):
         state_tree = BW_StateTree()
         self.world_map = world_map
         RGRRTStar.__init__(self, root_state, self.world_map.compute_reachable_set,
-                           self.world_map.random_sampler, state_tree, BW_Path)
+                           self.world_map.random_sampler, state_tree, BW_Path,rewire_radius)
 
     def visualize(self, visualize_nodes=True, visualize_edges=True, visualize_answer=True,visualize_obstacles=True,ax = None, fig=None):
         if ax is None or fig is None:

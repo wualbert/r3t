@@ -5,7 +5,7 @@ def test_simple_empty_world():
     goal = np.asarray([9,9])
     world_bound = AABB([(0,0),(10,10)])
     world = BoxWorldMap(world_bound)
-    rrt = BW_RGRRTStar(root,world)
+    rrt = BW_RGRRTStar(root,world,rewire_radius=4)
     goal_node = rrt.build_tree_to_goal_state(goal)
     # print(goal_node.parent.parent)
     ax, fig = rrt.visualize()
@@ -24,7 +24,7 @@ def test_fixed_very_boxy_world():
     obstacles = [box1, box2,box3,box4,box5]
     for obs in obstacles:
         world.add_obstacle(obs)
-    rrt = BW_RGRRTStar(root,world)
+    rrt = BW_RGRRTStar(root,world,rewire_radius=4)
     goal_node = rrt.build_tree_to_goal_state(goal)
     # print(goal_node.parent.parent)
     ax, fig = rrt.visualize()
