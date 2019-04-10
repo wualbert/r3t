@@ -31,7 +31,7 @@ class BoxWorldMap:
         self.obstacles.append(obstacle)
 
     def compute_reachable_set(self, state):
-        return BWReachabelSet(state, self)
+        return BW_ReachabelSet(state, self)
 
     def point_collides_with_obstacle(self, point):
         for obs in self.obstacles:
@@ -61,7 +61,7 @@ class BoxWorldMap:
         else:
             return np.linalg.norm(goal-start)
 
-class BWReachabelSet(ReachableSet):
+class BW_ReachabelSet(ReachableSet):
     def __init__(self, state, world_map):
         ReachableSet.__init__(self, BW_Path)
         self.state = state
