@@ -4,12 +4,24 @@ RG-RRT*
 '''
 
 import numpy as np
+from time import clock
+
+class Path:
+    #TODO
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        raise ('NotImplementedError')
+
+    def append(self, path):
+        raise ('NotImplementedError')
 
 class ReachableSet:
     '''
     Base class of ReachableSet
     '''
-    def __init__(self):#, state, planner, in_set, collision_test):
+    def __init__(self,path_class):#, state, planner, in_set, collision_test):
         '''
 
         :param state: The state this reachable set belongs to
@@ -17,6 +29,7 @@ class ReachableSet:
         :param in_set: A fast checker for checking whether a state is in the set
         Planner takes in (state, goal) and returns (cost_to_go, path)
         '''
+        self.path_class = path_class
         pass
         # self.state = state
         # self.state_dim = state.shape[0]
@@ -32,11 +45,11 @@ class ReachableSet:
         '''
         raise('NotImplementedError')
 
-    def plan_collision_free_path(self, goal_state):
+    def plan_collision_free_path_in_set(self, goal_state):
         '''
         Plans a path between self.state and goal_state. Goals state must be in this reachable set
         :param state:
-        :return: Tuple (cost_to_go, path). Cost to go is set to infinity
+        :return: Tuple (cost_to_go, path). path is a Path class object
         '''
         # if not self.contains(goal_state):
         #     return (np.inf, None)
@@ -60,7 +73,7 @@ class Node:
         self.parent = parent
         self.path_from_parent = path_from_parent
         self.cost_from_parent = cost_from_parent
-        if children:
+        if children is not None:
             self.children = children
         else:
             self.children = set()
@@ -74,6 +87,7 @@ class Node:
             return '\nRG-RRT* Node: '+'\n'+ \
                     '   state: ' + str(self.state) +'\n'+\
                     '   parent state: ' + str(self.parent.state) +'\n'+ \
+                    '   path from parent: ' + self.path_from_parent.__repr__()+'\n'+ \
                     '   cost from parent: ' + str(self.cost_from_parent) + '\n' + \
                     '   cost from root: ' + str(self.cost_from_root) + '\n' #+ \
                     # '   children: ' + self.children.__repr__() +'\n'
@@ -84,6 +98,13 @@ class Node:
                     '   cost from parent: ' + str(self.cost_from_parent) + '\n' + \
                     '   cost from root: ' + str(self.cost_from_root) + '\n' #+ \
                     # '   children: ' + self.children.__repr__() +'\n'
+
+    def __hash__(self):
+        return hash(str(self.state))
+
+    def __eq__(self, other):
+        return self.__hash__()==other.__hash__()
+
     def add_children(self, new_hildren_and_paths):
         '''
         adds new children, represented as a set, to the node
@@ -92,16 +113,19 @@ class Node:
         '''
         self.children.update(new_hildren_and_paths)
 
-    def update_parent(self, new_parent=None):
+    def update_parent(self, new_parent=None, cost_self_from_parent=None, path_self_from_parent=None):
         '''
         updates the parent of the node
         :param new_parent:
         :return:
         '''
-        if self.parent:
+        if self.parent is not None and new_parent is not None:
+            self.parent.children.remove(self)
             self.parent = new_parent
-        #calculate new cost from root
-        cost_self_from_parent, path_self_from_parent = self.parent.reachable_set.plan_collision_free_path(self.state)
+            self.parent.children.add(self)
+        #calculate new cost from root #FIXME: redundancy
+        assert(self.parent.reachable_set.contains(self.state))
+        cost_self_from_parent, path_self_from_parent = self.parent.reachable_set.plan_collision_free_path_in_set(self.state)
         cost_root_to_parent = self.parent.cost_from_root
         self.cost_from_parent = cost_self_from_parent
         self.cost_from_root = cost_root_to_parent+self.cost_from_parent
@@ -109,6 +133,9 @@ class Node:
         #calculate new cost for children
         for child in self.children:
             child.update_parent()
+        # print(self.parent.state, 'path', self.path_from_parent)
+        # assert(np.all(self.parent.state==self.path_from_parent[0]))
+        # assert(np.all(self.state==self.path_from_parent[1]))
 
 class StateTree:
     def __init__(self):
@@ -124,13 +151,14 @@ class StateTree:
         raise('NotImplementedError')
 
 class RGRRTStar:
-    def __init__(self, root_state, compute_reachable_set, sampler, state_tree):
+    def __init__(self, root_state, compute_reachable_set, sampler, state_tree, path_class):
         '''
         Base RG-RRT*
         :param root_state: The root state
         :param compute_reachable_set: A function that, given a state, returns its reachable set
         :param sampler: A function that randomly samples the state space
         :param state_tree: A StateTree object for fast querying
+        :param path_class: A class handel that is used to represent path
         '''
         self.root_node = Node(root_state, compute_reachable_set(root_state), cost_from_parent=0)
         self.root_id = hash(str(root_state))
@@ -138,17 +166,21 @@ class RGRRTStar:
         self.compute_reachable_set = compute_reachable_set
         self.sampler = sampler
         self.state_tree = state_tree
-
-
+        self.goal_state = None
+        self.goal_node = None
+        self.path_class = path_class
         self.state_tree = state_tree #tree for fast node querying
         self.state_tree.insert(self.root_id,root_state)
         self.state_to_node_map = dict()
         self.state_to_node_map[self.root_id] = self.root_node
+        self.node_tally = 0
 
-    def create_child_node(self, parent_node, child_state):
+    def create_child_node(self, parent_node, child_state,cost_from_parent = None, path_from_parent = None):
         # Update the nodes
         # compute the cost to go and path to reach from parent
-        cost_from_parent, path_from_parent = parent_node.reachable_set.plan_collision_free_path(child_state)
+        if cost_from_parent is None or path_from_parent is None:
+            assert (parent_node.reachable_set.contains(child_state))
+            cost_from_parent, path_from_parent = parent_node.reachable_set.plan_collision_free_path_in_set(child_state)
 
         # compute the reachable set from the new state
         new_reachable_set = self.compute_reachable_set(child_state)
@@ -156,11 +188,14 @@ class RGRRTStar:
         # construct a new node
         new_node = Node(child_state, self.compute_reachable_set(child_state),
                         parent=parent_node, path_from_parent=path_from_parent, cost_from_parent=cost_from_parent)
-
+        parent_node.children.add(new_node)
+        self.node_tally+=1
         return new_node
 
     def build_tree_to_goal_state(self, goal_state, timeout = False):
         #TODO: Timeout and other termination functionalities
+        start = clock()
+        self.goal_state = goal_state
         goal_node = None
         while True:
             #extend the tree
@@ -177,11 +212,17 @@ class RGRRTStar:
             if discard: #No state in the reachable set is better the the nearest state
                 continue
 
-            new_node = self.create_child_node(nearest_node, new_state)
+            #check for obstacles
+            cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
+            #FIXME: Partial extensions?
+            if cost_to_go == np.inf:
+                continue
+
+            #construct node
+            new_node = self.create_child_node(nearest_node, new_state, cost_to_go, path)
 
             #rewire the tree
             self.rewire(new_node)
-
 
             #add the new node to the state tree
             new_state_id = hash(str(new_state))
@@ -190,27 +231,48 @@ class RGRRTStar:
 
             #In "find path" mode, if the goal is in the reachable set, we are done
             if new_node.reachable_set.contains(goal_state) and goal_node is None and not timeout:
-                goal_node = self.create_child_node(new_node, goal_state)
+                # check for obstacles
+                cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
+                if cost_to_go == np.inf:
+                    continue
+                goal_node = self.create_child_node(new_node, goal_state, cost_to_go, path)
                 self.rewire(goal_node)
                 break
-
-        return goal_node
+        self.goal_node = goal_node
+        print('Found path to goal in %f seconds after exploring %d nodes' %(clock()-start, self.node_tally))
+        print(self.goal_node)
+        return self.goal_node
 
     def rewire(self, new_node):
         #FIXME: better bounding radius
-        ball_radius = 2*new_node.cost_from_parent
+        ball_radius = 3*new_node.cost_from_parent
 
-        rewire_candidates = list(self.state_tree.d_neighbors(new_node.state, ball_radius))
-        best_node = new_node
-        for cand in rewire_candidates:
-            candidate_node = self.state_to_node_map[cand]
-            #attempts to connect the
-            cand_child_node = self.create_child_node(candidate_node, new_node.state)
-            if cand_child_node.cost_from_root < best_node.cost_from_root:
-                best_node = cand_child_node
+        rewire_candidate_states = list(self.state_tree.d_neighbors(new_node.state, ball_radius))
+        #rewire the new node
+        best_parent = new_node.parent
+        best_cost_from_parent = new_node.cost_from_parent
+        best_path_from_parent = new_node.path_from_parent
+        for cand_state in rewire_candidate_states:
+            candidate_node = self.state_to_node_map[cand_state]
+            #check if it's better to connect to new node through the candidate
+            cost_to_go, path = candidate_node.reachable_set.plan_collision_free_path_in_set(new_node.state)
+            if candidate_node.cost_from_root+cost_to_go < best_cost_from_parent:
+                best_parent = candidate_node
+                best_cost_from_parent = cost_to_go
+                best_path_from_parent = path
+
         #update if the best parent is changed
-        if best_node!=new_node:
-            new_node.update_parent(best_node.parent)
+        if best_parent!=new_node.path_from_parent:
+            new_node.update_parent(best_parent, best_cost_from_parent, best_path_from_parent)
+
+        #rewire the candidates against new node
+        for cand_state in rewire_candidate_states:
+            candidate_node = self.state_to_node_map[cand_state]
+            if candidate_node == new_node.parent or candidate_node == self.root_node:
+                continue
+            cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(candidate_node.state)
+            if candidate_node.cost_from_root > cost_to_go+new_node.cost_from_root:
+                candidate_node.update_parent(new_node, cost_to_go, path)
         return
 
     def get_root_to_node_path(self, node):
