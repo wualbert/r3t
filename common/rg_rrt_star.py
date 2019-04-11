@@ -21,7 +21,7 @@ class ReachableSet:
     '''
     Base class of ReachableSet
     '''
-    def __init__(self,path_class):#, state, planner, in_set, collision_test):
+    def __init__(self,parent_state=None,path_class=None):#, state, planner, in_set, collision_test):
         '''
 
         :param state: The state this reachable set belongs to
@@ -30,6 +30,7 @@ class ReachableSet:
         Planner takes in (state, goal) and returns (cost_to_go, path)
         '''
         self.path_class = path_class
+        self.parent_state = parent_state
         pass
         # self.state = state
         # self.state_dim = state.shape[0]
@@ -146,7 +147,7 @@ class Node:
         # assert(np.all(self.parent.state==self.path_from_parent[0]))
         # assert(np.all(self.state==self.path_from_parent[1]))
 
-class StateTree:
+class ReachableSetTree:
     '''
     Wrapper for a fast data structure that can help querying
     '''
@@ -163,13 +164,13 @@ class StateTree:
         raise('NotImplementedError')
 
 class RGRRTStar:
-    def __init__(self, root_state, compute_reachable_set, sampler, state_tree, path_class,rewire_radius = None):
+    def __init__(self, root_state, compute_reachable_set, sampler, reachable_set_tree, path_class, rewire_radius = None):
         '''
         Base RG-RRT*
         :param root_state: The root state
         :param compute_reachable_set: A function that, given a state, returns its reachable set
         :param sampler: A function that randomly samples the state space
-        :param state_tree: A StateTree object for fast querying
+        :param reachable_set_tree: A StateTree object for fast querying
         :param path_class: A class handel that is used to represent path
         '''
         self.root_node = Node(root_state, compute_reachable_set(root_state), cost_from_parent=0)
@@ -177,12 +178,11 @@ class RGRRTStar:
         self.state_dim = root_state.shape[0]
         self.compute_reachable_set = compute_reachable_set
         self.sampler = sampler
-        self.state_tree = state_tree
         self.goal_state = None
         self.goal_node = None
         self.path_class = path_class
-        self.state_tree = state_tree #tree for fast node querying
-        self.state_tree.insert(self.root_id,root_state)
+        self.reachable_set_tree = reachable_set_tree #tree for fast node querying
+        self.reachable_set_tree.insert(self.root_id, self.root_Node.reachable_set)
         self.state_to_node_map = dict()
         self.state_to_node_map[self.root_id] = self.root_node
         self.node_tally = 0
@@ -229,7 +229,7 @@ class RGRRTStar:
             #sample the state space
             random_sample = self.sampler()
             # map the states to nodes
-            nearest_state_id = list(self.state_tree.nearest_k_neighbors(random_sample, k=1))[0]  # FIXME: necessary to cast to list?
+            nearest_state_id = list(self.reachable_set_tree.nearest_k_neighbors(random_sample, k=1))[0]  # FIXME: necessary to cast to list?
             nearest_node = self.state_to_node_map[nearest_state_id]
 
 
@@ -242,9 +242,9 @@ class RGRRTStar:
             if not is_extended: #extension failed
                 continue
 
-            #add the new node to the state tree
+            #add the new node to the set tree
             new_state_id = hash(str(new_node.state))
-            self.state_tree.insert(new_state_id, new_node.state)
+            self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
             self.state_to_node_map[new_state_id] = new_node
 
             #rewire the tree
@@ -269,7 +269,7 @@ class RGRRTStar:
             ball_radius = 3*new_node.cost_from_parent
         else:
             ball_radius=self.rewire_radius
-        rewire_candidate_states = list(self.state_tree.d_neighbors(new_node.state, ball_radius))
+        rewire_candidate_states = list(self.reachable_set_tree.d_neighbors(new_node.state, ball_radius))
         #rewire the parent of the new node
         best_new_parent = None
         best_cost_to_new_node = new_node.cost_from_root

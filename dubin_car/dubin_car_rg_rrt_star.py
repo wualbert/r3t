@@ -6,9 +6,8 @@ from collections import deque
 import pickle
 import os
 from utils.utils import *
-from compute_reachable_set import Base_DC_Reachable_Set
+from base_reachable_set import Base_DC_Reachable_Set
 
-# Comment these out when running on ROS
 from bounding_box_closest_polytope.lib.box import AABB, point_in_box
 from bounding_box_closest_polytope.visualization.visualize import visualize_boxes
 
@@ -42,23 +41,59 @@ class DC_ReachableSet(ReachableSet):
         self.state = state
         #pull up base set
         self.base_set = BASE_REACHABLE_SET
+        self.AABB = None
+        self.get_AABB()
+        self.id = hash(str(self.state))
 
-    def transform_to_car_frame(self, goal_state):
-        # Transform the goal state to car frame (car is centered at 0,0,0)
-        goal_state_car_frame = np.zeros(3)
+    def get_AABB(self):
+        '''
+        Constructs the axis aligned bounding box of the reachable set as an AABB object
+        :return:
+        '''
+        #TODO
+        vertices = np.zeros([4,2])
+        vertices[0,:] = self.AABB.u
+        vertices[1,:] = self.AABB.v
+        vertices[2,0] = self.AABB.u[0]
+        vertices[2,1] = self.AABB.v[1]
+        vertices[3,0] = self.AABB.u[1]
+        vertices[3,1] = self.AABB.v[0]
+        for i in range(4):
+            vertices[i,:] = self.transform_from_car_frame(vertices[i,:])
+        max_xy = np.amax(vertices, axis = 0)
+        min_xy = np.amin(vertices, axis = 0)
+        self.AABB = AABB([min_xy,max_xy])
 
-        delta_x = goal_state[0] - self.state[0]
-        delta_y = goal_state[1] - self.state[1]
+    def transform_from_car_frame(self, car_frame_point):
+        world_frame_point = np.zeros(3)
+        world_frame_point[0] = np.cos(self.state[2])*car_frame_point[0]-np.sin(self.state[2])*car_frame_point[1]
+        world_frame_point[1] = np.sin(self.state[2])*car_frame_point[0]+np.cos(self.state[2])*car_frame_point[1]
+        if car_frame_point.shape[0]==2:
+            return world_frame_point[0:2]+self.state[0:2]
+        else:
+            world_frame_point[2] = car_frame_point[2]
+            return world_frame_point+self.state
+
+    def transform_to_car_frame(self, world_frame_point):
+        '''
+        Given a point in the world, transform it to the car frame
+        :param world_frame_point:
+        :return:
+        '''
+        car_frame_point = np.zeros(3)
+
+        delta_x = world_frame_point[0] - self.state[0]
+        delta_y = world_frame_point[1] - self.state[1]
 
         #calculate x
-        goal_state_car_frame[0] = np.cos(self.state[2])*delta_x+np.sin(self.state[2])*delta_y
+        car_frame_point[0] = np.cos(self.state[2])*delta_x+np.sin(self.state[2])*delta_y
         #calculate y
-        goal_state_car_frame[1] = -np.sin(self.state[2])*delta_x+np.cos(self.state[2])*delta_y
+        car_frame_point[1] = -np.sin(self.state[2])*delta_x+np.cos(self.state[2])*delta_y
         #calculate theta
-        goal_state_car_frame[2] = goal_state[2]-self.state[2]
+        car_frame_point[2] = world_frame_point[2] - self.state[2]
         #handle theta wrapping around
-        goal_state_car_frame[2] = wrap_angle(goal_state_car_frame[2])
-        return goal_state_car_frame
+        car_frame_point[2] = wrap_angle(car_frame_point[2])
+        return car_frame_point
 
     def contains(self, goal_state):
         '''
@@ -84,7 +119,8 @@ class DC_ReachableSet(ReachableSet):
         :param query_point:
         :return: Tuple (closest_point, closest_point_is_self.state)
         '''
-        return self.base_set.contains(self.transform_to_car_frame(query_point))
+        car_frame_query_point = query_point
+        return self.transform_from_car_frame(self.base_set.find_closest_state(car_frame_query_point))
 
 class DC_Map:
     '''
@@ -135,23 +171,23 @@ class DC_Map:
         # print(start,goal)
         return False
 
-class DC_StateTree(StateTree):
+class DC_ReachableSetTree(ReachableSetTree):
     '''
     Wrapper for a fast data structure that can help querying
     FIXME: The tree is projected onto 2D due to rtree limitations
     '''
     def __init__(self):
-        StateTree.__init__(self)
+        ReachableSetTree.__init__(self)
         self.tree = index.Index()
-        self.state_dict = {}
+        self.reachable_set_dict = {}
 
-    def insert(self, id, state):
-        self.tree.insert(id, [state[0],state[1],state[0],state[1]])
-        self.state_dict[id] = state
+    def insert(self, id, reachable_set):
+        self.tree.insert(id, [reachable_set.AABB.u[0],reachable_set.AABB.u[1],reachable_set.AABB.v[0], reachable_set.AABB.v[1]])
+        self.reachable_set_dict[id] = reachable_set
 
     def nearest_k_neighbors(self, query_state, k=1):
         nearest_ids = list(self.tree.nearest([query_state[0],query_state[1],query_state[0],query_state[1]], k))
-        nearest_ids.sort(key = lambda id: abs(angle_diff(self.state_dict[id][2],query_state[2]))) #sort nearest state ids by theta distance
+        nearest_ids.sort(key = lambda id: abs(angle_diff(self.reachable_set_dict[id][2], query_state[2]))) #sort nearest state ids by theta distance
         return nearest_ids[0:min(k, len(nearest_ids))]
 
     def d_neighbors(self, query_state, d = np.inf):
@@ -159,7 +195,7 @@ class DC_StateTree(StateTree):
 
 class DC_RGRRTStar(RGRRTStar):
     def __init__(self, root_state,rewire_radius):
-        RGRRTStar.__init__(self, root_state, DC_Map.compute_reachable_set, DC_Map.random_sampler, DC_StateTree, DC_Path, rewire_radius)
+        RGRRTStar.__init__(self, root_state, DC_Map.compute_reachable_set, DC_Map.random_sampler, DC_ReachableSetTree, DC_Path, rewire_radius)
 
     def visualize(self):
         pass

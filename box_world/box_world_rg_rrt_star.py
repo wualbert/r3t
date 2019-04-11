@@ -103,9 +103,9 @@ class BW_ReachabelSet(ReachableSet):
             unit_direction = (query_point-self.state)/np.linalg.norm(query_point-self.state)
             return self.state+unit_direction*self.reachable_range
 
-class BW_StateTree(StateTree):
+class BW_StateTree(ReachableSetTree):
     def __init__(self):
-        StateTree.__init__(self)
+        ReachableSetTree.__init__(self)
         self.tree = index.Index()
 
     def insert(self, id, state):
