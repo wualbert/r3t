@@ -5,98 +5,25 @@ import os
 from collections import deque
 from utils.utils import *
 from bounding_box_closest_polytope.lib.box import AABB, point_in_box
-
-class DC_Car_Frame_Segment:
-    def __init__(self, start, end, cost):
-        '''
-
-        :param start:
-        :param end:
-        '''
-        self.start = start
-        self.end = end
-        self.end_in_start_frame = self.transform_to_start_frame(self.end)
-        self.arc_r = np.linalg.norm(self.end_in_start_frame[0:2])/np.sin(abs(self.end_in_start_frame[2]/2))
-        self.cost = cost #TODO
-
-    def transform_from_start_frame(self, state):
-        ans = np.zeros(3)
-        ans[0] = np.cos(self.start[2]) * state[0] - np.sin(self.start[2]) * state[1]
-        ans[1] = np.sin(self.start[2]) * state[0] + np.cos(self.start[2]) * state[1]
-        if state.shape[0]==2:
-            return ans[0:2]+self.start[0:2]
-        else:
-            ans[2] = state[2]
-            return ans+self.start
-
-    def transform_to_start_frame(self, state):
-        '''
-        Given a point in the world, transform it to the car frame
-        :param state:
-        :return:
-        '''
-        ans = np.zeros(3)
-
-        delta_x = state[0] - self.start[0]
-        delta_y = state[1] - self.start[1]
-
-        #calculate x
-        ans[0] = np.cos(self.start[2])*delta_x+np.sin(self.start[2])*delta_y
-        #calculate y
-        ans[1] = -np.sin(self.start[2])*delta_x+np.cos(self.start[2])*delta_y
-        #calculate theta
-        ans[2] = state[2] - self.start[2]
-        #handle theta wrapping around
-        ans[2] = wrap_angle(ans[2])
-        return ans
-
-    def get_fraction_state(self, fraction):
-        '''
-        returns the state that represents traversing "fraction" of the path's length
-        :param fraction: float in 0~1
-        :return: a state
-        '''
-        assert(0<=fraction<=1)
-        ans_in_start_frame = np.zeros(3)
-        if self.end_in_start_frame[2]<1e-4: #FIXME: approximation for line
-            ans_in_start_frame = self.end_in_start_frame*fraction
-        else:
-            ans_in_start_frame[0] = self.arc_r*np.sin(abs(self.end_in_start_frame[2]*fraction))
-            ans_in_start_frame[1] = (self.arc_r-np.cos(self.arc_r*abs(self.end_in_start_frame[2]*fraction)))*np.sign(self.end_in_start_frame[2])
-        return self.transform_from_start_frame(ans_in_start_frame)
+import dubins
 
 class DC_Car_Frame_Path(Path):
-    def __init__(self, segments):
+    '''
+    Wrapper for dubins path object
+    '''
+    def __init__(self, end):
         '''
         Creates a path object
         FIXME: This implementation is kinda stupid
         '''
         Path.__init__(self)
-        self.segments = segments
-        self.costs = np.zeros(len(self.segments))
-        for i, s in enumerate(self.segments):
-            self.costs[i] = s.cost
-        self.cumulative_cost = np.cumsum(self.costs)
-        self.total_cost = self.cumulative_cost[-1]
+        self.end = end
 
     def __repr__(self):
-        pass
-
-    def append(self, path):
-        raise('NotImplementedError')
+        return('Car frame Dubin path '+ str(self.end))
 
     def get_fraction_state(self, fraction):
-        #binary search to find the right segment
-        #FIXME: something faster
-        assert(0<=fraction<=1)
-        cost_value = fraction*self.total_cost
-        seg_index = np.argwhere(self.cumulative_cost>cost_value)[0]
-        if seg_index==0:
-            fraction_in_seg = cost_value/self.cumulative_cost[0]
-        else:
-            fraction_in_seg = (cost_value-self.cumulative_cost[seg_index-1])/(self.cumulative_cost[seg_index]-self.cumulative_cost[seg_index-1])
-        return self.segments[seg_index].get_fraction_state(fraction_in_seg)
-
+        raise(NotImplementedError)
 
 class Base_DC_Reachable_Set(ReachableSet):
     '''
@@ -173,71 +100,16 @@ class Base_DC_Reachable_Set(ReachableSet):
         return np.asarray([x_i,y_i,theta_i])
 
     def compute_dubin_path_to_state(self, goal_state):
-        reachability = False
-        cost = np.inf
-        path = None
-        goal_state[2] = wrap_angle(goal_state[2])
-        #FIXME: Implement a better local planner!
-        #Naive one turn Dubin controller
-        # print('goal state: ',goal_state)
-        if abs(goal_state[2])>np.pi/2:
-            #FIXME: Currently doesn't consider the car turning around (over pi/2)
-            return reachability, cost, path
-        if (goal_state[2]>0 and goal_state[1]<0) or (goal_state[2]<0 and goal_state[1]>0):
-            return reachability, cost, path
-
-        x_bound = self.turn_radius*np.sin(abs(goal_state[2]))
-        # print(x_bound,y_bound)
-
-        if abs(goal_state[0])<x_bound:
-            #compute global y bound
-
-            #compute goal based y bound
-            theta = np.arctan(goal_state[0]/self.turn_radius)
-            if goal_state[2] >= 0:
-                y_bound = self.turn_radius - self.turn_radius * np.cos(theta)
-            elif goal_state[2] <= 0:
-                y_bound = -self.turn_radius + self.turn_radius * np.cos(theta)
-
-            #remove states
-            if goal_state[2]>0:
-                if goal_state[1]>y_bound:
-                    # print('rejected')
-                    return reachability, cost, path
-            elif goal_state[2]<0:
-                if goal_state[1]<y_bound:
-                    # print('rejected')
-                    return reachability, cost, path
-
-        goal_x_bound = self.turn_radius - self.turn_radius * np.cos(goal_state[2])
-        if goal_state[1]>0:
-            if goal_y_bound
-
-
-        if goal_state[0]<=0.5:
-            print(goal_state, x_bound,y_bound)
-            # if abs(goal_state[0]) < x_bound and abs(goal_state[2] > np.pi/2):
-        #     if abs(goal_state[1])>abs(y_bound):
-        #         return reachability, cost, path
-
-        reachability = True
-        #calculate cost
-        #FIXME: This does not make sense at all
-        arc_r = np.linalg.norm(goal_state[0:2])/np.sin(abs(goal_state[2]/2))
-        if arc_r > 1e5: #FIXME: Workaround
-            start_turn_x = goal_state[0]
-        else:
-            start_turn_x = goal_state[0]-np.sin(abs(goal_state[2]))*arc_r
-        line_cost = start_turn_x
-        line_segment = DC_Car_Frame_Segment(np.zeros(3), np.asarray([start_turn_x,0,0]), line_cost)
-        if arc_r > 1e5:
-            path = DC_Car_Frame_Path([line_segment])
-
-        else:
-            arc_cost = arc_r * goal_state[2]
-            arc_segment = DC_Car_Frame_Segment(np.asarray([start_turn_x,0,0]), goal_state, arc_cost)
-            path = DC_Car_Frame_Path([line_segment,arc_segment])
-        return reachability, path, cost
+        #compute dubin's path
+        path = dubins.shortest_path(np.zeros(3), goal_state, self.turn_radius)
+        cost = path.path_length()
+        #check for undesirable paths: ones that requires turning over pi/2
+        step_size = cost/20 #FIXME: arbitrary number
+        samples = path.sample_many(step_size)[0]
+        for s in samples:
+            if abs(wrap_angle(s[2]))>np.pi/2:
+                return False, None, np.inf
+        return True, DC_Car_Frame_Path(goal_state), cost
 
     def compute_base_reachable_set(self):
         print('Computing base reachable set...')
