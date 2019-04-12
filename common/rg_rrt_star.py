@@ -216,9 +216,9 @@ class RGRRTStar:
         cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
         #FIXME: Support for partial extensions
         if cost_to_go == np.inf:
-            return False, None, None
+            return False, None
         new_node = self.create_child_node(nearest_node, new_state, cost_to_go, path)
-        return True, new_node, new_state
+        return True, new_node
 
     def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False):
         #TODO: Timeout and other termination functionalities
@@ -255,7 +255,7 @@ class RGRRTStar:
             if discard:  # No state in the reachable set is better the the nearest state
                 continue
 
-            is_extended, new_node,new_state = self.extend(new_state, nearest_node)
+            is_extended, new_node = self.extend(new_state, nearest_node)
             if not is_extended: #extension failed
                 continue
 
