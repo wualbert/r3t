@@ -269,7 +269,7 @@ class RGRRTStar:
             #In "find path" mode, if the goal is in the reachable set, we are done
             if new_node.reachable_set.contains(goal_state): #FIXME: support for goal region
                 # check for obstacles
-                cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
+                cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
                 if cost_to_go == np.inf:
                     continue
                 # add the goal node to the tree
