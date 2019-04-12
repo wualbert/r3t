@@ -175,14 +175,14 @@ class RGRRTStar:
         '''
         self.root_node = Node(root_state, compute_reachable_set(root_state), cost_from_parent=0)
         self.root_id = hash(str(root_state))
-        self.state_dim = root_state.shape[0]
+        self.state_dim = root_state[0]
         self.compute_reachable_set = compute_reachable_set
         self.sampler = sampler
         self.goal_state = None
         self.goal_node = None
         self.path_class = path_class
-        self.reachable_set_tree = reachable_set_tree #tree for fast node querying
-        self.reachable_set_tree.insert(self.root_id, self.root_Node.reachable_set)
+        self.reachable_set_tree = reachable_set_tree() #tree for fast node querying
+        self.reachable_set_tree.insert(self.root_id, self.root_node.reachable_set)
         self.state_to_node_map = dict()
         self.state_to_node_map[self.root_id] = self.root_node
         self.node_tally = 0
@@ -214,31 +214,48 @@ class RGRRTStar:
 
         # check for obstacles
         cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
-        # FIXME: Partial extensions?
+        #FIXME: Support for partial extensions
         if cost_to_go == np.inf:
-            return False, None
+            return False, None, None
         new_node = self.create_child_node(nearest_node, new_state, cost_to_go, path)
-        return True, new_node
+        return True, new_node, new_state
 
-    def build_tree_to_goal_state(self, goal_state, timeout_mode = False):
+    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False):
         #TODO: Timeout and other termination functionalities
         start = clock()
         self.goal_state = goal_state
         goal_node = None
         while True:
+            if stop_on_first_reach:
+                if self.goal_node is not None:
+                    print('Found path to goal in %f seconds after exploring %d nodes' % (
+                    clock() - start, self.node_tally))
+                    return self.goal_node
+            if clock()-start>allocated_time:
+                if self.goal_node is None:
+                    print('Unable to find path within %f seconds!' % (clock() - start))
+                    return None
+                else:
+                    print('Found path to goal in %f seconds after exploring %d nodes' % (
+                    clock() - start, self.node_tally))
+                    return self.goal_node
+
             #sample the state space
             random_sample = self.sampler()
             # map the states to nodes
-            nearest_state_id = list(self.reachable_set_tree.nearest_k_neighbors(random_sample, k=1))[0]  # FIXME: necessary to cast to list?
-            nearest_node = self.state_to_node_map[nearest_state_id]
-
-
-            # find the closest state in the reachable set and use it to extend the tree
-            new_state, discard = nearest_node.reachable_set.find_closest_state(random_sample)
+            nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbors(random_sample, k=1))  # FIXME: necessary to cast to list?
+            discard = True
+            for i, nearest_state_id in enumerate(nearest_state_id_list):
+                nearest_node = self.state_to_node_map[nearest_state_id]
+                if nearest_node.reachable_set.contains(random_sample):
+                    # find the closest state in the reachable set and use it to extend the tree
+                    new_state, discard = nearest_node.reachable_set.find_closest_state(random_sample)
+                if not discard:
+                    break
             if discard:  # No state in the reachable set is better the the nearest state
                 continue
 
-            is_extended, new_node = self.extend(new_state, nearest_node)
+            is_extended, new_node,new_state = self.extend(new_state, nearest_node)
             if not is_extended: #extension failed
                 continue
 
@@ -250,7 +267,7 @@ class RGRRTStar:
             #rewire the tree
             self.rewire(new_node)
             #In "find path" mode, if the goal is in the reachable set, we are done
-            if new_node.reachable_set.contains(goal_state) and goal_node is None and not timeout_mode:
+            if new_node.reachable_set.contains(goal_state): #FIXME: support for goal region
                 # check for obstacles
                 cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
                 if cost_to_go == np.inf:
@@ -258,10 +275,8 @@ class RGRRTStar:
                 # add the goal node to the tree
                 goal_node = self.create_child_node(new_node, goal_state)
                 self.rewire(goal_node)
-                break
-        self.goal_node = goal_node
-        print('Found path to goal in %f seconds after exploring %d nodes' %(clock()-start, self.node_tally))
-        return self.goal_node
+                self.goal_node=goal_node
+
 
     def rewire(self, new_node):
         #FIXME: better bounding radius
@@ -278,6 +293,8 @@ class RGRRTStar:
             if parent_candidate_node==new_node.parent or parent_candidate_node==new_node:
                 continue
             #check if it's better to connect to new node through the candidate
+            if not parent_candidate_node.reachable_set.contains(new_node.state):
+                continue
             cost_to_go, path = parent_candidate_node.reachable_set.plan_collision_free_path_in_set(new_node.state)
             if parent_candidate_node.cost_from_root+cost_to_go < best_cost_to_new_node:
                 best_new_parent = parent_candidate_node
@@ -287,10 +304,12 @@ class RGRRTStar:
         if best_new_parent is not None:
             new_node.update_parent(best_new_parent)
 
-        #rewire the candidates against new node
+        #try to make the new node the candidate's parent
         for cand_state in rewire_candidate_states:
             candidate_node = self.state_to_node_map[cand_state]
             if candidate_node == new_node.parent or candidate_node == self.root_node:
+                continue
+            if not new_node.reachable_set.contains(candidate_node.state):
                 continue
             cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(candidate_node.state)
             if candidate_node.cost_from_root > cost_to_go+new_node.cost_from_root:

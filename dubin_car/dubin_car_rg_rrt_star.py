@@ -3,34 +3,127 @@ from rtree import index
 import matplotlib.pyplot as plt
 from matplotlib import collections  as mc
 from collections import deque
-import pickle
+# import cPickle as pickle
+import dill
 import os
 from utils.utils import *
-from base_reachable_set import Base_DC_Reachable_Set
-
+import dubin_car.base_reachable_set
+import sys
+from dubin_car.base_reachable_set import *
+import dubins
+from time import time
 from bounding_box_closest_polytope.lib.box import AABB, point_in_box
 from bounding_box_closest_polytope.visualization.visualize import visualize_boxes
 
 class DC_Path(Path):
-    def __init__(self,state, car_frame_path):
+    def __init__(self,state, car_frame_path,turn_radius, cost):
         '''
         Creates a path object using base path from car frame and a state
         :param state:
         :param base_path: DC_Car_Frame_Path object
         '''
         Path.__init__(self)
-        raise ('NotImplementedError')
+        self.start_state = state
+        self.car_frame_path = car_frame_path
+        self.turn_radius = turn_radius
+        #Transform to world frame
+        self.end_state = self.transform_from_car_frame(car_frame_path.end)
+        self.world_frame_dubins_path = None
+        self.cost = cost
+    def __repr__(self):
+        return ('Dubin path from ' + str(self.start_state) + ' to ' + str(self.end_state))
 
-# load base reachable set
-dir_path = os.path.dirname(os.path.realpath(__file__))
-with open(dir_path + '/base_reachable_set.p', 'rb') as f:
-    BASE_REACHABLE_SET = pickle.load(f)
+    def transform_from_car_frame(self, car_frame_point):
+        world_frame_point = np.zeros(3)
+        world_frame_point[0] = np.cos(self.start_state[2]) * car_frame_point[0] - np.sin(self.start_state[2]) * car_frame_point[1]
+        world_frame_point[1] = np.sin(self.start_state[2]) * car_frame_point[0] + np.cos(self.start_state[2]) * car_frame_point[1]
+        if car_frame_point.shape[0] == 2:
+            return world_frame_point[0:2] + self.start_state[0:2]
+        else:
+            world_frame_point[0:2] += self.start_state[0:2]
+            world_frame_point[2] = wrap_angle(car_frame_point[2]+self.start_state[2])
+            return world_frame_point
+
+    def transform_to_car_frame(self, world_frame_point):
+        '''
+        Given a point in the world, transform it to the car frame
+        :param world_frame_point:
+        :return:
+        '''
+        car_frame_point = np.zeros(3)
+
+        delta_x = world_frame_point[0] - self.start_state[0]
+        delta_y = world_frame_point[1] - self.start_state[1]
+
+        #calculate x
+        car_frame_point[0] = np.cos(self.start_state[2])*delta_x+np.sin(self.start_state[2])*delta_y
+        #calculate y
+        car_frame_point[1] = -np.sin(self.start_state[2])*delta_x+np.cos(self.start_state[2])*delta_y
+        #calculate theta
+        car_frame_point[2] = world_frame_point[2] - self.start_state[2]
+        #handle theta wrapping around
+        car_frame_point[2] = wrap_angle(car_frame_point[2])
+        return car_frame_point
+
+    def get_fraction_point(self, fraction):
+        '''
+        Get the state after traversing fraction of the path
+        :param fraction:
+        :return:
+        '''
+        if self.world_frame_dubins_path is None:
+            #only compute if necessary
+            self.world_frame_dubins_path = dubins.shortest_path(self.start_state, self.end_state, self.turn_radius)
+            self.cost = self.world_frame_dubins_path.path_length()
+        fraction = max(0,min(1,fraction))
+        if fraction>=1-1e-2:
+            return self.end_state
+        return np.asarray(self.world_frame_dubins_path.sample(fraction * self.cost))
+
+    def cut_short(self, fraction):
+        self.end_state = self.get_fraction_point(fraction)
+        self.car_frame_path = DC_Car_Frame_Path(self.transform_to_car_frame(self.end_state))
+        self.world_frame_dubins_path = dubins.shortest_path(self.start_state, self.end_state, self.turn_radius)
+        self.cost = self.world_frame_dubins_path.path_length()
+
+    def get_dubins_interpolated_path(self, samples = 20):
+        '''
+        Get the associated dubin's path expressed as piecewise linear path connected by waypoints
+        :param samples: number of waypoints, includes start and end
+        :return: numpy array of waypoints
+        '''
+        fractions = np.linspace(0,1,samples)
+        waypoints = np.zeros([samples,3])
+        for i in range(samples):
+            waypoints[i, :] = self.get_fraction_point(fractions[i])
+            # while True:
+            #     try:
+            #         waypoints[i, :] = self.get_fraction_point(fractions[i])
+            #         break
+            #     except:
+            #         print('Sample point not found!')
+            #         print(dubins.shortest_path(np.zeros(3), self.car_frame_path.end, self.turn_radius).path_length())
+            #         print(dubins.shortest_path(self.start_state, self.world_frame_end, self.turn_radius).path_length())
+            #         print(self.car_frame_dubins_path.path_length())
+            #         return np.zeros([samples,3])
+        return waypoints
 
 class DC_ReachableSet(ReachableSet):
     '''
     Base class of ReachableSet
     '''
-    def __init__(self,state):#, state, planner, in_set, collision_test):
+    # load base reachable set
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    print(dir_path)
+    sys.path.append(dir_path+'/base_reachable_set.py')
+    print('Loading base reachable set...')
+    start_time = clock()
+    with open(dir_path + '/brs.p', 'rb') as f:
+        BASE_REACHABLE_SET = dill.load(f)
+    print('Loaded base reachable set after %f seconds' % (clock() - start_time))
+
+
+    def __init__(self, state, is_collision):#, state, planner, in_set, collision_test):
         '''
 
         :param state: The state this reachable set belongs to
@@ -40,10 +133,11 @@ class DC_ReachableSet(ReachableSet):
         ReachableSet.__init__(self,DC_Path)
         self.state = state
         #pull up base set
-        self.base_set = BASE_REACHABLE_SET
         self.AABB = None
         self.get_AABB()
         self.id = hash(str(self.state))
+        self.turn_radius = self.BASE_REACHABLE_SET.turn_radius
+        self.is_collision = is_collision
 
     def get_AABB(self):
         '''
@@ -52,12 +146,10 @@ class DC_ReachableSet(ReachableSet):
         '''
         #TODO
         vertices = np.zeros([4,2])
-        vertices[0,:] = self.AABB.u
-        vertices[1,:] = self.AABB.v
-        vertices[2,0] = self.AABB.u[0]
-        vertices[2,1] = self.AABB.v[1]
-        vertices[3,0] = self.AABB.u[1]
-        vertices[3,1] = self.AABB.v[0]
+        vertices[0,:] = self.BASE_REACHABLE_SET.x_range[0], self.BASE_REACHABLE_SET.y_range[0]
+        vertices[1,:] = self.BASE_REACHABLE_SET.x_range[1], self.BASE_REACHABLE_SET.y_range[1]
+        vertices[2,:] =  self.BASE_REACHABLE_SET.x_range[0], self.BASE_REACHABLE_SET.y_range[1]
+        vertices[3,:] =  self.BASE_REACHABLE_SET.x_range[1], self.BASE_REACHABLE_SET.y_range[0]
         for i in range(4):
             vertices[i,:] = self.transform_from_car_frame(vertices[i,:])
         max_xy = np.amax(vertices, axis = 0)
@@ -71,8 +163,9 @@ class DC_ReachableSet(ReachableSet):
         if car_frame_point.shape[0]==2:
             return world_frame_point[0:2]+self.state[0:2]
         else:
-            world_frame_point[2] = car_frame_point[2]
-            return world_frame_point+self.state
+            world_frame_point[0:2] += self.state[0:2]
+            world_frame_point[2] = wrap_angle(car_frame_point[2]+self.state[2])
+            return world_frame_point
 
     def transform_to_car_frame(self, world_frame_point):
         '''
@@ -101,7 +194,7 @@ class DC_ReachableSet(ReachableSet):
         :param state: query state
         :return: Boolean of whether the state is reachable
         '''
-        return self.base_set.contains(self.transform_to_car_frame(goal_state))
+        return self.BASE_REACHABLE_SET.contains(self.transform_to_car_frame(goal_state))
 
     def plan_collision_free_path_in_set(self, goal_state):
         '''
@@ -109,8 +202,16 @@ class DC_ReachableSet(ReachableSet):
         :param state:
         :return: Tuple (cost_to_go, path). path is a Path class object
         '''
-        cost_to_go, car_frame_path = self.base_set.plan_collision_free_path_in_set(self.transform_to_car_frame(goal_state))
-        return cost_to_go, DC_Path(self.state, car_frame_path)
+        #TODO: Support for partial planning
+        cost_to_go, car_frame_path = self.BASE_REACHABLE_SET.plan_collision_free_path_in_set(self.transform_to_car_frame(goal_state))
+        world_frame_path = DC_Path(self.state, car_frame_path, self.turn_radius, cost=cost_to_go)
+        #samples
+        samples = np.linspace(0,1,20)
+        for i in range(1,20):
+            if self.is_collision(world_frame_path.get_fraction_point(samples[i])):
+                #collision happened, return the point right before collision
+                return np.inf, None
+        return cost_to_go, DC_Path(self.state, car_frame_path, self.turn_radius, cost=cost_to_go)
 
 
     def find_closest_state(self, query_point):
@@ -119,8 +220,9 @@ class DC_ReachableSet(ReachableSet):
         :param query_point:
         :return: Tuple (closest_point, closest_point_is_self.state)
         '''
-        car_frame_query_point = query_point
-        return self.transform_from_car_frame(self.base_set.find_closest_state(car_frame_query_point))
+        car_frame_query_point = self.transform_to_car_frame(query_point)
+        closest_state, is_self_state =  self.BASE_REACHABLE_SET.find_closest_state(car_frame_query_point)
+        return self.transform_from_car_frame(closest_state), is_self_state
 
 class DC_Map:
     '''
@@ -141,7 +243,7 @@ class DC_Map:
         self.obstacles.append(obstacle)
 
     def compute_reachable_set(self, state):
-        return DC_ReachableSet(state)
+        return DC_ReachableSet(state,self.point_collides_with_obstacle)
 
     def point_collides_with_obstacle(self, point):
         for obs in self.obstacles:
@@ -181,21 +283,18 @@ class DC_ReachableSetTree(ReachableSetTree):
         self.tree = index.Index()
         self.reachable_set_dict = {}
 
-    def insert(self, id, reachable_set):
-        self.tree.insert(id, [reachable_set.AABB.u[0],reachable_set.AABB.u[1],reachable_set.AABB.v[0], reachable_set.AABB.v[1]])
-        self.reachable_set_dict[id] = reachable_set
+    def insert(self, state_id, reachable_set):
+        self.tree.insert(state_id, [reachable_set.AABB.u[0], reachable_set.AABB.u[1], reachable_set.AABB.v[0], reachable_set.AABB.v[1]])
+        self.reachable_set_dict[state_id] = reachable_set
 
     def nearest_k_neighbors(self, query_state, k=1):
         nearest_ids = list(self.tree.nearest([query_state[0],query_state[1],query_state[0],query_state[1]], k))
-        nearest_ids.sort(key = lambda id: abs(angle_diff(self.reachable_set_dict[id][2], query_state[2]))) #sort nearest state ids by theta distance
+        nearest_ids.sort(key = lambda state_id: abs(angle_diff(self.reachable_set_dict[state_id].state[2], query_state[2]))) #sort nearest state ids by theta distance
         return nearest_ids[0:min(k, len(nearest_ids))]
 
     def d_neighbors(self, query_state, d = np.inf):
         return self.tree.intersection([query_state[0]-d/2,query_state[1]-d/2,query_state[0]+d/2,query_state[1]+d/2], objects=False)
 
 class DC_RGRRTStar(RGRRTStar):
-    def __init__(self, root_state,rewire_radius):
-        RGRRTStar.__init__(self, root_state, DC_Map.compute_reachable_set, DC_Map.random_sampler, DC_ReachableSetTree, DC_Path, rewire_radius)
-
-    def visualize(self):
-        pass
+    def __init__(self, root_state, compute_reachable_set, random_sampler,rewire_radius):
+        RGRRTStar.__init__(self, root_state, compute_reachable_set, random_sampler, DC_ReachableSetTree, DC_Path, rewire_radius)
