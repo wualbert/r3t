@@ -14,7 +14,7 @@ def test_simple_empty_world():
         return
     visualize_tree(rrt, world)
 
-def test_fixed_very_boxy_world():
+def test_fixed_small_boxy_world():
     root = np.asarray([1,0.5,0])
     goal = np.asarray([9,9,np.pi/2])
     world_bound = AABB([(0,0),(10,10)])

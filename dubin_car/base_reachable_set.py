@@ -28,8 +28,8 @@ class Base_DC_Reachable_Set(ReachableSet):
     '''
     A base reachable set for a Dubin's car located at (x,y,theta) = (0,0,0)
     '''
-    def __init__(self, x_range=np.asarray([0,5]), y_range=np.asarray([-5,5]), x_resolution=0.1,
-                 y_resolution=0.1, theta_resolution=0.1,turn_radius = 0.5):
+    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_resolution=0.05,
+                 y_resolution=0.05, theta_resolution=0.01,turn_radius = 0.5):
         ReachableSet.__init__(self,DC_Car_Frame_Path)
         self.x_range = x_range
         self.y_range = y_range
