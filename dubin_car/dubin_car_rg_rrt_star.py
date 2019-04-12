@@ -20,7 +20,7 @@ class DC_Path(Path):
         '''
         Creates a path object using base path from car frame and a state
         :param state:
-        :param base_path: DC_Car_Frame_Path object
+        :param car_frame_path: 3*2 numpy array representing the car frame path
         '''
         Path.__init__(self)
         self.start_state = state
