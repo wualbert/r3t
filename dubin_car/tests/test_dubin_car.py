@@ -55,5 +55,5 @@ def test_fixed_ring_boxy_world():
     visualize_tree(rrt, world)
 
 if __name__ == '__main__':
-    test_fixed_ring_boxy_world()
+    test_fixed_small_boxy_world()
     plt.show()

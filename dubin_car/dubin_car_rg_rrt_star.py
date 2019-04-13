@@ -20,14 +20,14 @@ class DC_Path(Path):
         '''
         Creates a path object using base path from car frame and a state
         :param state:
-        :param base_path: DC_Car_Frame_Path object
+        :param car_frame_path: 3*2 numpy array representing the car frame path
         '''
         Path.__init__(self)
         self.start_state = state
         self.car_frame_path = car_frame_path
         self.turn_radius = turn_radius
         #Transform to world frame
-        self.end_state = self.transform_from_car_frame(car_frame_path.end)
+        self.end_state = self.transform_from_car_frame(car_frame_path)
         self.world_frame_dubins_path = None
         self.cost = cost
     def __repr__(self):
@@ -114,12 +114,11 @@ class DC_ReachableSet(ReachableSet):
     '''
     # load base reachable set
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    print(dir_path)
-    sys.path.append(dir_path+'/base_reachable_set.py')
     print('Loading base reachable set...')
     start_time = clock()
-    with open(dir_path + '/brs.p', 'rb') as f:
-        BASE_REACHABLE_SET = dill.load(f)
+    brs_is_reachable = np.load(dir_path + '/brs_is_reachables.npy')
+    brs_costs = np.load(dir_path + '/brs_costs.npy')
+    BASE_REACHABLE_SET = Base_DC_Reachable_Set(is_reachables=brs_is_reachable,costs=brs_costs)
     print('Loaded base reachable set after %f seconds' % (clock() - start_time))
 
 
