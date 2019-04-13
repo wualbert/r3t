@@ -13,8 +13,8 @@ class Base_DC_Reachable_Set(ReachableSet):
     '''
     A base reachable set for a Dubin's car located at (x,y,theta) = (0,0,0)
     '''
-    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_resolution=0.1,
-                 y_resolution=0.1, theta_resolution=0.1,turn_radius = 0.5, is_reachables= None, costs = None):
+    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_resolution=0.05,
+                 y_resolution=0.05, theta_resolution=0.01,turn_radius = 0.5, is_reachables= None, costs = None):
         ReachableSet.__init__(self)
         self.x_range = x_range
         self.y_range = y_range
@@ -115,8 +115,8 @@ if __name__=='__main__':
     base_dc_reachable_set = Base_DC_Reachable_Set()
     print('Storing file...')
     start_time = clock()
-    np.save('brs_is_reachables', base_dc_reachable_set.is_reachables)
-    np.save('brs_costs',base_dc_reachable_set.costs)
+    np.save('precomputation_results/brs_is_reachables', base_dc_reachable_set.is_reachables)
+    np.save('precomputation_results/brs_costs',base_dc_reachable_set.costs)
     print('Stored file after %f seconds' % (clock() - start_time))
 
     # #For testing

@@ -116,8 +116,8 @@ class DC_ReachableSet(ReachableSet):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     print('Loading base reachable set...')
     start_time = clock()
-    brs_is_reachable = np.load(dir_path + '/brs_is_reachables.npy')
-    brs_costs = np.load(dir_path + '/brs_costs.npy')
+    brs_is_reachable = np.load(dir_path + '/precomputation_results/brs_is_reachables.npy')
+    brs_costs = np.load(dir_path + '/precomputation_results/brs_costs.npy')
     BASE_REACHABLE_SET = Base_DC_Reachable_Set(is_reachables=brs_is_reachable,costs=brs_costs)
     print('Loaded base reachable set after %f seconds' % (clock() - start_time))
 
