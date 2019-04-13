@@ -82,7 +82,7 @@ class DC_Path(Path):
 
     def cut_short(self, fraction):
         self.end_state = self.get_fraction_point(fraction)
-        self.car_frame_path = DC_Car_Frame_Path(self.transform_to_car_frame(self.end_state))
+        self.car_frame_path = self.transform_to_car_frame(self.end_state)
         self.world_frame_dubins_path = dubins.shortest_path(self.start_state, self.end_state, self.turn_radius)
         self.cost = self.world_frame_dubins_path.path_length()
 
@@ -116,11 +116,12 @@ class DC_ReachableSet(ReachableSet):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     print('Loading base reachable set...')
     start_time = clock()
-    brs_is_reachable = np.load(dir_path + '/brs_is_reachables.npy')
-    brs_costs = np.load(dir_path + '/brs_costs.npy')
-    BASE_REACHABLE_SET = Base_DC_Reachable_Set(is_reachables=brs_is_reachable,costs=brs_costs)
+    brs_is_reachable = np.load(dir_path + '/precomputation_results/brs_is_reachables.npy')
+    brs_costs = np.load(dir_path + '/precomputation_results/brs_costs.npy')
+    brs_uv = np.load(dir_path + '/precomputation_results/uv.npy')
+    BASE_REACHABLE_SET = Base_DC_Reachable_Set(is_reachables=brs_is_reachable,costs=brs_costs,uv=brs_uv)
     print('Loaded base reachable set after %f seconds' % (clock() - start_time))
-
+    vertices = np.asarray(np.meshgrid(BASE_REACHABLE_SET.uv[0,:], BASE_REACHABLE_SET.uv[1,:],BASE_REACHABLE_SET.uv[2,:])).T.reshape(3,-1)
 
     def __init__(self, state, is_collision):#, state, planner, in_set, collision_test):
         '''
@@ -144,15 +145,11 @@ class DC_ReachableSet(ReachableSet):
         :return:
         '''
         #TODO
-        vertices = np.zeros([4,2])
-        vertices[0,:] = self.BASE_REACHABLE_SET.x_range[0], self.BASE_REACHABLE_SET.y_range[0]
-        vertices[1,:] = self.BASE_REACHABLE_SET.x_range[1], self.BASE_REACHABLE_SET.y_range[1]
-        vertices[2,:] =  self.BASE_REACHABLE_SET.x_range[0], self.BASE_REACHABLE_SET.y_range[1]
-        vertices[3,:] =  self.BASE_REACHABLE_SET.x_range[1], self.BASE_REACHABLE_SET.y_range[0]
-        for i in range(4):
-            vertices[i,:] = self.transform_from_car_frame(vertices[i,:])
-        max_xy = np.amax(vertices, axis = 0)
-        min_xy = np.amin(vertices, axis = 0)
+        world_frame_vertices = np.zeros([3,8])
+        for i in range(8):
+            world_frame_vertices[:,i] = self.transform_from_car_frame(self.vertices[:,i])
+        max_xy = np.amax(world_frame_vertices, axis = 1)
+        min_xy = np.amin(world_frame_vertices, axis = 1)
         self.AABB = AABB([min_xy,max_xy])
 
     def transform_from_car_frame(self, car_frame_point):
@@ -276,24 +273,40 @@ class DC_Map:
 class DC_ReachableSetTree(ReachableSetTree):
     '''
     Wrapper for a fast data structure that can help querying
-    FIXME: The tree is projected onto 2D due to rtree limitations
     '''
+
     def __init__(self):
         ReachableSetTree.__init__(self)
-        self.tree = index.Index()
+
+        # Setup rtree for 3D
+        p = index.Property()
+        p.dimension = 3
+        self.tree = index.Index(properties=p)
         self.reachable_set_dict = {}
 
     def insert(self, state_id, reachable_set):
-        self.tree.insert(state_id, [reachable_set.AABB.u[0], reachable_set.AABB.u[1], reachable_set.AABB.v[0], reachable_set.AABB.v[1]])
+        self.tree.insert(state_id,np.hstack([reachable_set.AABB.u, reachable_set.AABB.v]))
         self.reachable_set_dict[state_id] = reachable_set
 
     def nearest_k_neighbors(self, query_state, k=1):
-        nearest_ids = list(self.tree.nearest([query_state[0],query_state[1],query_state[0],query_state[1]], k))
-        nearest_ids.sort(key = lambda state_id: abs(angle_diff(self.reachable_set_dict[state_id].state[2], query_state[2]))) #sort nearest state ids by theta distance
+        nearest_ids = list(self.tree.nearest(np.hstack([query_state,query_state]), k))
+        #FIXME: proper distance comparison when all points are in bounding boxes
         return nearest_ids[0:min(k, len(nearest_ids))]
 
-    def d_neighbors(self, query_state, d = np.inf):
-        return self.tree.intersection([query_state[0]-d/2,query_state[1]-d/2,query_state[0]+d/2,query_state[1]+d/2], objects=False)
+    def d_neighbors(self, query_state, d = np.inf, theta_d = np.pi/2):
+        '''
+        Find the state in 2d*2d*2*theta_d cube
+        :param query_state:
+        :param d:
+        :param theta_d:
+        :return:
+        '''
+        theta_low = wrap_angle(query_state[2]-theta_d)
+        theta_high = wrap_angle(query_state[2]-theta_d)
+        if theta_high<theta_low: #FIXME: ad-hoc theta wrap around handler
+            theta_high+=2*np.pi
+        return self.tree.intersection([query_state[0]-d,query_state[1]-d,theta_low,query_state[0]+d,query_state[1]+d,
+                                      theta_high], objects=False)
 
 class DC_RGRRTStar(RGRRTStar):
     def __init__(self, root_state, point_collides_with_obstacle, random_sampler, rewire_radius):
