@@ -13,8 +13,8 @@ class Base_DC_Reachable_Set(ReachableSet):
     '''
     A base reachable set for a Dubin's car located at (x,y,theta) = (0,0,0)
     '''
-    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_resolution=0.05,
-                 y_resolution=0.05, theta_resolution=0.05,turn_radius = 0.5, is_reachables= None, costs = None):
+    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_resolution=0.1,
+                 y_resolution=0.1, theta_resolution=0.1,turn_radius = 0.5, is_reachables= None, costs = None):
         ReachableSet.__init__(self)
         self.x_range = x_range
         self.y_range = y_range
@@ -43,7 +43,7 @@ class Base_DC_Reachable_Set(ReachableSet):
         '''
         #check if the point is within x and y limits
         #notice theta is all covered, so no need to check
-        if not point_in_box(car_frame_goal_state, self.AABB):
+        if not point_in_box(car_frame_goal_state[0:2], self.AABB):
             return False
         #actually try to query
         x_index, y_index, theta_index = self.coordinates_to_index(car_frame_goal_state)
