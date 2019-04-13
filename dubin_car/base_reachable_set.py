@@ -13,8 +13,8 @@ class Base_DC_Reachable_Set(ReachableSet):
     '''
     A base reachable set for a Dubin's car located at (x,y,theta) = (0,0,0)
     '''
-    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_resolution=0.1,
-                 y_resolution=0.1, theta_resolution=0.1,turn_radius = 0.5, is_reachables= None, costs = None, uv=None):
+    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_resolution=0.05,
+                 y_resolution=0.05, theta_resolution=0.05,turn_radius = 0.5, is_reachables= None, costs = None):
         ReachableSet.__init__(self)
         self.x_range = x_range
         self.y_range = y_range
@@ -25,19 +25,15 @@ class Base_DC_Reachable_Set(ReachableSet):
         self.y_count = int(np.ceil((self.y_range[1]-self.y_range[0])/self.y_resolution))
         self.theta_count = int(np.ceil(2*np.pi/theta_resolution))
         self.turn_radius = turn_radius
+        self.AABB = AABB(([self.x_range[0],self.y_range[0]],[self.x_range[1],self.y_range[1]]))
         self.origin_index = self.coordinates_to_index(np.zeros(3))
-        if is_reachables is None or costs is None or uv is None:
+        if is_reachables is None or costs is None:
             self.is_reachables = np.empty([self.x_count, self.y_count, self.theta_count], dtype=bool)
             self.costs = np.empty([self.x_count,self.y_count,self.theta_count],dtype=float)
-            self.uv = np.zeros([3,2])
-            self.uv[:,0] = self.origin_index
-            self.uv[:,1] = self.origin_index
             self.compute_base_reachable_set()
         else:
             self.is_reachables=is_reachables
             self.costs=costs
-            self.uv = uv
-        self.AABB=AABB([self.uv[:,0],self.uv[:,1]])
 
     def contains(self, car_frame_goal_state):
         '''
@@ -97,7 +93,7 @@ class Base_DC_Reachable_Set(ReachableSet):
         path = dubins.shortest_path(np.zeros(3), car_frame_state, self.turn_radius)
         cost = path.path_length()
         #check for undesirable paths: ones that requires turning over pi/2
-        step_size = cost/40 #FIXME: arbitrary number
+        step_size = cost/20 #FIXME: arbitrary number
         samples = path.sample_many(step_size)[0]
         assert(cost is not None)
         for s in samples:
@@ -113,25 +109,14 @@ class Base_DC_Reachable_Set(ReachableSet):
             for j in range(self.y_count):
                 for k in range(self.theta_count):
                     self.is_reachables[i, j, k], self.costs[i, j, k] = self.compute_dubin_path_to_state(self.index_to_coordinates(i, j, k))
-                    if self.is_reachables[i,j,k]:
-                        self.uv[0, 0] = min(i,self.uv[0,0])
-                        self.uv[1, 0] = min(j,self.uv[1,0])
-                        self.uv[2, 0] = min(k,self.uv[2,0])
-                        self.uv[0, 1] = max(i, self.uv[0,1])
-                        self.uv[1, 1] = max(j, self.uv[1,1])
-                        self.uv[2, 1] = max(k, self.uv[2,1])
-        self.uv[:,0] = self.index_to_coordinates(*self.uv[:,0])
-        self.uv[:,1] = self.index_to_coordinates(*self.uv[:,1])
-
         print('Completed computation after %f seconds' %(clock()-start_time))
 
 if __name__=='__main__':
     base_dc_reachable_set = Base_DC_Reachable_Set()
     print('Storing file...')
     start_time = clock()
-    np.save('precomputation_results/brs_is_reachables', base_dc_reachable_set.is_reachables)
-    np.save('precomputation_results/brs_costs',base_dc_reachable_set.costs)
-    np.save('precomputation_results/uv', base_dc_reachable_set.uv)
+    np.save('brs_is_reachables', base_dc_reachable_set.is_reachables)
+    np.save('brs_costs',base_dc_reachable_set.costs)
     print('Stored file after %f seconds' % (clock() - start_time))
 
     # #For testing
