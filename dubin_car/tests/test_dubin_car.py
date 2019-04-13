@@ -7,7 +7,7 @@ def test_simple_empty_world():
     root = np.asarray([1,1,0])
     goal = np.asarray([29,29,np.pi])
     world = DC_Map(world_bound)
-    rrt = DC_RGRRTStar(root,world.compute_reachable_set, world.random_sampler, rewire_radius=4)
+    rrt = DC_RGRRTStar(root,world.point_collides_with_obstacle, world.random_sampler, rewire_radius=4)
     goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, allocated_time=np.inf)
     if goal_node is None:
         print('No path found!')
@@ -27,7 +27,7 @@ def test_fixed_small_boxy_world():
     obstacles = [box1, box2,box3,box4,box5]
     for obs in obstacles:
         world.add_obstacle(obs)
-    rrt = DC_RGRRTStar(root,world.compute_reachable_set, world.random_sampler, rewire_radius=4)
+    rrt = DC_RGRRTStar(root,world.point_collides_with_obstacle, world.random_sampler, rewire_radius=4)
     goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, allocated_time=np.inf)
     if goal_node is None:
         print('No path found!')
@@ -47,7 +47,7 @@ def test_fixed_ring_boxy_world():
     obstacles = [box1, box2,box3,box4,box5]
     for obs in obstacles:
         world.add_obstacle(obs)
-    rrt = DC_RGRRTStar(root,world.compute_reachable_set, world.random_sampler, rewire_radius=4)
+    rrt = DC_RGRRTStar(root,world.point_collides_with_obstacle, world.random_sampler, rewire_radius=4)
     goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, allocated_time=np.inf)
     if goal_node is None:
         print('No path found!')

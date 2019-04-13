@@ -241,9 +241,9 @@ class DC_Map:
 
     def add_obstacle(self, obstacle):
         self.obstacles.append(obstacle)
-
-    def compute_reachable_set(self, state):
-        return DC_ReachableSet(state,self.point_collides_with_obstacle)
+    #
+    # def compute_reachable_set(self, state):
+    #     return DC_ReachableSet(state,self.point_collides_with_obstacle)
 
     def point_collides_with_obstacle(self, point):
         for obs in self.obstacles:
@@ -296,12 +296,14 @@ class DC_ReachableSetTree(ReachableSetTree):
         return self.tree.intersection([query_state[0]-d/2,query_state[1]-d/2,query_state[0]+d/2,query_state[1]+d/2], objects=False)
 
 class DC_RGRRTStar(RGRRTStar):
-    def __init__(self, root_state, compute_reachable_set, random_sampler,rewire_radius):
+    def __init__(self, root_state, point_collides_with_obstacle, random_sampler, rewire_radius):
         '''
         Dubin's car RG-RRT* problem setup.
-        :param root_state:
-        :param compute_reachable_set:
+        :param root_state: The starting position of the car in world/map frame
+        :param point_collides_with_obstacle: function handle that computes whether a
         :param random_sampler:
         :param rewire_radius:
         '''
+        def compute_reachable_set(state):
+            return DC_ReachableSet(state,point_collides_with_obstacle)
         RGRRTStar.__init__(self, root_state, compute_reachable_set, random_sampler, DC_ReachableSetTree, DC_Path, rewire_radius)
