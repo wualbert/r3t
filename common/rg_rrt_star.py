@@ -221,6 +221,13 @@ class RGRRTStar:
         return True, new_node
 
     def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False):
+        '''
+        Builds a RG-RRT* Tree to solve for the path to a goal.
+        :param goal_state:  The goal for the planner.
+        :param allocated_time: Time allowed (in seconds) for the planner to run. If time runs out before the planner finds a path, the code will be terminated.
+        :param stop_on_first_reach: Whether the planner should continue improving on the solution if it finds a path to goal before time runs out.
+        :return: The goal node as a Node object. If no path is found, None is returned. self.goal_node is set to the return value after running.
+        '''
         #TODO: Timeout and other termination functionalities
         start = clock()
         self.goal_state = goal_state

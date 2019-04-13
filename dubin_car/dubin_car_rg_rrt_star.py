@@ -297,4 +297,11 @@ class DC_ReachableSetTree(ReachableSetTree):
 
 class DC_RGRRTStar(RGRRTStar):
     def __init__(self, root_state, compute_reachable_set, random_sampler,rewire_radius):
+        '''
+        Dubin's car RG-RRT* problem setup.
+        :param root_state:
+        :param compute_reachable_set:
+        :param random_sampler:
+        :param rewire_radius:
+        '''
         RGRRTStar.__init__(self, root_state, compute_reachable_set, random_sampler, DC_ReachableSetTree, DC_Path, rewire_radius)
