@@ -82,7 +82,7 @@ class DC_Path(Path):
 
     def cut_short(self, fraction):
         self.end_state = self.get_fraction_point(fraction)
-        self.car_frame_path = DC_Car_Frame_Path(self.transform_to_car_frame(self.end_state))
+        self.car_frame_path = self.transform_to_car_frame(self.end_state)
         self.world_frame_dubins_path = dubins.shortest_path(self.start_state, self.end_state, self.turn_radius)
         self.cost = self.world_frame_dubins_path.path_length()
 
@@ -118,7 +118,9 @@ class DC_ReachableSet(ReachableSet):
     start_time = clock()
     brs_is_reachable = np.load(dir_path + '/precomputation_results/brs_is_reachables.npy')
     brs_costs = np.load(dir_path + '/precomputation_results/brs_costs.npy')
-    BASE_REACHABLE_SET = Base_DC_Reachable_Set(is_reachables=brs_is_reachable,costs=brs_costs)
+    closest_index = np.load(dir_path + '/precomputation_results/closest_reachable_index.npy')
+
+    BASE_REACHABLE_SET = Base_DC_Reachable_Set(is_reachables=brs_is_reachable, costs=brs_costs, closest_index=closest_index)
     print('Loaded base reachable set after %f seconds' % (clock() - start_time))
 
 
@@ -315,7 +317,7 @@ class DC_RGRRTStar(RGRRTStar):
         '''
         Dubin's car RG-RRT* problem setup.
         :param root_state: The starting position of the car in world/map frame
-        :param point_collides_with_obstacle: function handle that computes whether a
+        :param point_collides_with_obstacle: function handle that computes whether a point collides with an obstacle
         :param random_sampler:
         :param rewire_radius:
         '''

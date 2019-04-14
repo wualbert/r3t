@@ -275,7 +275,9 @@ class RGRRTStar:
                     break
             if discard:  # No state in the reachable set is better the the nearest state
                 continue
-
+            #sanity check to prevent numerical errors
+            if not nearest_node.reachable_set.contains(new_state):
+                continue
             is_extended, new_node = self.extend(new_state, nearest_node)
             if not is_extended: #extension failed
                 continue
