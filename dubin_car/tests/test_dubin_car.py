@@ -55,7 +55,7 @@ def test_fixed_small_boxy_world_long_time(time=15):
         return
     visualize_tree(rrt, world)
 
-def test_fixed_medium_boxy_world_optimality(try_duration,tries = 5):
+def test_fixed_medium_boxy_world_optimality(try_duration,tries = 5, plot_routes = False):
     root = np.asarray([0,0,np.pi/2])
     goal = np.asarray([26,24,np.pi/5])
     world_bound = AABB([(-10,-10),(30,30)])
@@ -80,24 +80,25 @@ def test_fixed_medium_boxy_world_optimality(try_duration,tries = 5):
     costs[0] = goal_node.cost_from_root
     times[0] = total_duration
     nodes_explored[0] = rrt.node_tally
+    if plot_routes:
+        fig, ax = visualize_tree(rrt, world)
+        ax.set_title('First solution (found in %.3f seconds)' % total_duration)
+        plt.savefig("first_sol.png", dpi=150)
+        plt.close()
 
-    fig, ax = visualize_tree(rrt, world)
-    ax.set_title('First solution (found in %.3f seconds)' % total_duration)
-
-    plt.savefig("first_sol.png", dpi=150)
     for i in range(1,tries):
         start_time = clock()
         goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=False,allocated_time=try_duration)
         try_duration = clock()-start_time
-        fig, ax = visualize_tree(rrt, world)
         total_duration+=try_duration
         costs[i] = goal_node.cost_from_root
         times[i] = total_duration
         nodes_explored[i] = rrt.node_tally
-
-        ax.set_title('Solution after %.3f seconds' % total_duration)
-        plt.savefig("try_"+str(i)+".png", dpi=150)
-        plt.close()
+        if plot_routes:
+            fig, ax = visualize_tree(rrt, world)
+            ax.set_title('Solution after %.3f seconds' % total_duration)
+            plt.savefig("try_"+str(i)+".png", dpi=150)
+            plt.close()
     fig, ax = plt.subplots()
 
     ax.plot(times,costs)
@@ -136,5 +137,5 @@ def test_fixed_ring_boxy_world():
     visualize_tree(rrt, world)
 
 if __name__ == '__main__':
-    test_fixed_medium_boxy_world_optimality(5,30)
+    test_fixed_medium_boxy_world_optimality(5,30, plot_routes=True)
     # plt.show()

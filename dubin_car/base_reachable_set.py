@@ -13,8 +13,8 @@ class Base_DC_Reachable_Set(ReachableSet):
     '''
     A base reachable set for a Dubin's car located at (x,y,theta) = (0,0,0)
     '''
-    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_count=50,
-                 y_count=50, theta_count=10, turn_radius = 2, is_reachables= None, costs = None, closest_index = None):
+    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_count=100,
+                 y_count=100, theta_count=50, turn_radius = 1, is_reachables= None, costs = None, closest_index = None):
         ReachableSet.__init__(self)
         self.x_range = x_range
         self.y_range = y_range
@@ -119,12 +119,46 @@ class Base_DC_Reachable_Set(ReachableSet):
             for j in range(self.y_count):
                 for k in range(self.theta_count):
                     self.is_reachables[i, j, k], self.costs[i, j, k] = self.compute_dubin_path_to_state(self.index_to_coordinates(i, j, k))
-        reachables = np.argwhere(self.is_reachables)
-        reachable_states = np.zeros(reachables.shape)
-        for i in range(reachables.shape[0]):
-            reachable_states[i] = self.index_to_coordinates(*reachables[i])
+        end_time_1 = clock()-start_time
+        print('Computed base reachable set in %f seconds' %end_time_1)
+        print('Processing base reachable set...')
+        start_time_2 = clock()
+        all_reachables = np.argwhere(self.is_reachables)
+        shell_reachables = []
+        shell_reachable_states = []
+        for i in range(all_reachables.shape[0]):
+            #only do append internal points
+            p,q,r = all_reachables[i,:]
+            try:
+                if not(self.is_reachables[p+1,q,r] and self.is_reachables[p-1,q,r] and self.is_reachables[p,q,r] and
+                       self.is_reachables[p + 1, q+1, r] and self.is_reachables[p - 1, q+1, r] and self.is_reachables[
+                           p, q+1, r] and
+                       self.is_reachables[p + 1, q-1, r] and self.is_reachables[p - 1, q-1, r] and self.is_reachables[
+                           p, q-1, r] and
+                       self.is_reachables[p + 1, q, r+1] and self.is_reachables[p - 1, q, r+1] and self.is_reachables[
+                           p, q, r+1] and
+                       self.is_reachables[p + 1, q+1, r+1] and self.is_reachables[p - 1, q+1, r+1] and self.is_reachables[
+                           p, q+1, r+1] and
+                       self.is_reachables[p + 1, q-1, r+1] and self.is_reachables[p - 1, q-1, r+1] and self.is_reachables[
+                           p, q-1, r+1] and
+                       self.is_reachables[p + 1, q+1, r-1] and self.is_reachables[p - 1, q+1, r-1] and self.is_reachables[
+                           p, q+1, r-1] and
+                       self.is_reachables[p + 1, q, r-1] and self.is_reachables[p - 1, q, r-1] and self.is_reachables[
+                           p, q, r-1] and
+                       self.is_reachables[p + 1, q-1, r-1] and self.is_reachables[p - 1, q-1, r-1] and self.is_reachables[
+                           p, q-1, r-1]):
+                    shell_reachables.append(all_reachables[i,:])
+                    shell_reachable_states.append(self.index_to_coordinates(p,q,r))
+            except:
+                pass
+        shell_reachables = np.asarray(shell_reachables)
+        shell_reachable_states = np.asarray(shell_reachable_states)
+        end_time_2 = clock()-start_time_2
+        print('Processed base reachable set in %f seconds' %end_time_2)
+
         #compute closest states
-        print('Computing closest reachable index...')
+        print('Computing closest reachable state...')
+        start_time_3=clock()
         for i in range(self.x_count):
             print('Completed %f %% in %f seconds' %(100*(i*1./self.x_count),(clock()-start_time)))
             for j in range(self.y_count):
@@ -133,16 +167,14 @@ class Base_DC_Reachable_Set(ReachableSet):
                     if self.is_reachables[i,j,k]:
                         self.closest_reachable_index[i, j, k] = closest_ri
                     else:
-                        diff = reachable_states-self.index_to_coordinates(*closest_ri)
+                        diff = shell_reachable_states-self.index_to_coordinates(*closest_ri)
                         #L2 norm on (x,y,theta)
                         diff_norm = np.linalg.norm(diff, axis=1)
                         argmin_diff = np.argmin(diff_norm)
-                        self.closest_reachable_index[i, j, k] = reachables[argmin_diff]
-                        #for debugging
-                        # assert(self.is_reachables[i,j,k]==False)
-                        # p,q,r=self.closest_reachable_index[i, j, k]
-                        # assert(self.is_reachables[int(p),int(q),int(r)])
-        print('Completed computation after %f seconds' %(clock()-start_time))
+                        self.closest_reachable_index[i, j, k] = shell_reachables[argmin_diff]
+        end_time_3 = clock()-start_time_3
+        print('Computed closest reachable state in %f seconds' %end_time_3)
+        print('Finished precomputation in %f seconds' %(end_time_1+end_time_2+end_time_3))
 
 if __name__=='__main__':
     base_dc_reachable_set = Base_DC_Reachable_Set()
