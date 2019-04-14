@@ -111,10 +111,10 @@ class BW_StateTree(ReachableSetTree):
     def insert(self, id, state):
         self.tree.insert(id, [state[0],state[1],state[0],state[1]])
 
-    def nearest_k_neighbors(self, query_state, k=1):
+    def nearest_k_neighbor_ids(self, query_state, k=1):
         return self.tree.nearest([query_state[0],query_state[1],query_state[0],query_state[1]], k)
 
-    def d_neighbors(self, query_state, d = np.inf):
+    def d_neighbor_ids(self, query_state, d = np.inf):
         return self.tree.intersection([query_state[0]-d/2,query_state[1]-d/2,query_state[0]+d/2,query_state[1]+d/2], objects=False)
 
 
