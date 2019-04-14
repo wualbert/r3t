@@ -56,13 +56,13 @@ def test_fixed_small_boxy_world_long_time(time=15):
 
 def test_fixed_medium_boxy_world_hard(stop_on_first_reach,allocated_time):
     root = np.asarray([0,0,np.pi/2])
-    goal = np.asarray([22,22,-np.pi/4])
+    goal = np.asarray([22,22,np.pi/4])
     world_bound = AABB([(-5,-5),(25,25)])
     world = DC_Map(world_bound)
-    box1=AABB([(3,10),(12,15)])
+    box1=AABB([(-1,10),(9,15)])
     box2=AABB([(11,7),(24,12)])
     # box3 = AABB([(1, 4), (4, 17)])
-    box4 = AABB([(2, 1), (10, 5)])
+    box4 = AABB([(2, 1), (10, 8)])
     obstacles = [box1, box2, box4]
     for obs in obstacles:
         world.add_obstacle(obs)
@@ -95,5 +95,5 @@ def test_fixed_ring_boxy_world():
     visualize_tree(rrt, world)
 
 if __name__ == '__main__':
-    test_fixed_medium_boxy_world_hard(False,10)
+    test_fixed_medium_boxy_world_hard(True,np.inf)
     plt.show()
