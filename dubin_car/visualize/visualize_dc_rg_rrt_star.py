@@ -69,6 +69,8 @@ def visualize_tree(dc_rrt, world_map, visualize_all_nodes=True, visualize_all_pa
 
         goal_lc = mc.LineCollection(goal_path_segments, colors='b', linewidths=1,alpha=0.7)
         ax.add_collection(goal_lc)
+    ax.set_xlabel('x(m)')
+    ax.set_ylabel('y(m)')
     plt.xlim(world_map.world_bounding_box.u[0],world_map.world_bounding_box.v[0])
     plt.ylim(world_map.world_bounding_box.u[1],world_map.world_bounding_box.v[1])
     return fig, ax

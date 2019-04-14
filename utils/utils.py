@@ -2,7 +2,7 @@ import numpy as np
 
 def wrap_angle(theta):
     theta %= 2*np.pi
-    if theta>np.pi:
+    if theta>=np.pi:
         return theta-2*np.pi
     else:
         return theta

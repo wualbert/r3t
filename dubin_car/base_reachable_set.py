@@ -13,29 +13,32 @@ class Base_DC_Reachable_Set(ReachableSet):
     '''
     A base reachable set for a Dubin's car located at (x,y,theta) = (0,0,0)
     '''
-    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_resolution=0.1,
-                 y_resolution=0.1, theta_resolution=0.05,turn_radius = 2, is_reachables= None, costs = None):
+    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_count=50,
+                 y_count=50, theta_count=10, turn_radius = 2, is_reachables= None, costs = None, closest_index = None):
         ReachableSet.__init__(self)
         self.x_range = x_range
         self.y_range = y_range
-        self.x_resolution = x_resolution
-        self.y_resolution = y_resolution
-        self.theta_resolution = theta_resolution
-        self.x_count = int(np.ceil((self.x_range[1]-self.x_range[0])/self.x_resolution))
-        self.y_count = int(np.ceil((self.y_range[1]-self.y_range[0])/self.y_resolution))
-        self.theta_count = int(np.ceil(2*np.pi/theta_resolution))
+        self.x_count = x_count
+        self.y_count = y_count
+        self.theta_count = theta_count
+        self.x_resolution = (self.x_range[1]-self.x_range[0])*1./self.x_count
+        self.y_resolution = (self.y_range[1]-self.y_range[0])*1./self.y_count
+        self.theta_resolution = 2.*np.pi/self.theta_count
         self.turn_radius = turn_radius
         self.AABB = AABB(([self.x_range[0],self.y_range[0]],[self.x_range[1],self.y_range[1]]))
         self.origin_index = self.coordinates_to_index(np.zeros(3))
-        if is_reachables is None or costs is None:
+        if is_reachables is None or costs is None or closest_index is None:
             self.is_reachables = np.empty([self.x_count, self.y_count, self.theta_count], dtype=bool)
             self.costs = np.empty([self.x_count,self.y_count,self.theta_count],dtype=float)
+            self.closest_reachable_index = np.empty([self.x_count, self.y_count, self.theta_count], dtype=(float, 3))
             self.compute_base_reachable_set()
         else:
             self.is_reachables=is_reachables
             self.costs=costs
+            self.closest_reachable_index = closest_index
 
     def contains(self, car_frame_goal_state):
+
         '''
         Check if the state given is in this set
         :param state: query state
@@ -56,9 +59,13 @@ class Base_DC_Reachable_Set(ReachableSet):
         :param state:
         :return: Tuple (cost_to_go, path). path is a Path class object
         '''
-        # if not self.contains(goal_state):
-        #     return (np.inf, None)
-        # return self.planner(self.state, goal_state)
+        if not self.contains(car_frame_goal_state):
+            print('This should never happen...')
+            print('tested goal state:', car_frame_goal_state)
+            print('self.contains', self.contains(car_frame_goal_state))
+            print('self.find_closest_state', self.find_closest_state(car_frame_goal_state))
+            # print('self.is_reachable', self.is_reachables[self.find_closest_state(car_frame_goal_state)])
+            return (np.inf, None)
         assert(self.contains(car_frame_goal_state))
         x_index, y_index, theta_index = self.coordinates_to_index(car_frame_goal_state)
         return self.costs[x_index,y_index,theta_index], self.index_to_coordinates(x_index,y_index,theta_index)
@@ -69,24 +76,26 @@ class Base_DC_Reachable_Set(ReachableSet):
         :param car_frame_query_point:
         :return: Tuple (closest_state, closest_point_is_self.state)
         '''
-        #FIXME: This does not work. Need to do something like ray-tracing
-        closest_state = np.zeros(3)
-        closest_state[0] = min(max(car_frame_query_point[0], self.x_range[0]), self.x_range[1])
-        closest_state[1] = min(max(car_frame_query_point[1], self.y_range[0]), self.y_range[1])
-        closest_state[2] = wrap_angle(car_frame_query_point[2])
-        return closest_state, np.all(closest_state==self.origin_index)
+        # closest_projection = np.zeros(3)
+        # closest_projection[0] = min(max(car_frame_query_point[0], self.x_range[0]), self.x_range[1])
+        # closest_projection[1] = min(max(car_frame_query_point[1], self.y_range[0]), self.y_range[1])
+        # closest_projection[2] = wrap_angle(car_frame_query_point[2])
+        i,j,k = self.coordinates_to_index(car_frame_query_point)
+        cri = self.closest_reachable_index[i, j, k]
+
+        return self.index_to_coordinates(*cri), np.all(cri==self.origin_index)
 
     def index_to_coordinates(self, i,j,k):
         assert(0<= i < self.x_count and 0 <= j <self.y_count and 0 <= k <self.theta_count)
         x = self.x_range[0]+i*self.x_resolution
         y = self.y_range[0]+j*self.y_resolution
-        theta = wrap_angle(k*self.theta_resolution-np.pi)
+        theta = wrap_angle(-np.pi+k*self.theta_resolution)
         return np.asarray([x,y,theta])
 
     def coordinates_to_index(self, car_frame_state):
-        x_i = min(max(int(np.floor((car_frame_state[0]-self.x_range[0]) / self.x_resolution)), 0), self.x_count - 1)
-        y_i = min(max(int(np.floor((car_frame_state[1]-self.y_range[0]) / self.y_resolution)), 0), self.y_count - 1)
-        theta_i = min(max(int(np.floor((wrap_angle(car_frame_state[2]) + np.pi) / self.theta_resolution)), 0), self.theta_count - 1)
+        x_i = min(max(int(np.round((car_frame_state[0]-self.x_range[0]) / self.x_resolution)), 0), self.x_count - 1)
+        y_i = min(max(int(np.round((car_frame_state[1]-self.y_range[0]) / self.y_resolution)), 0), self.y_count - 1)
+        theta_i = min(max(int(np.round((car_frame_state[2] + np.pi) / self.theta_resolution)), 0), self.theta_count - 1)
         return np.asarray([x_i,y_i,theta_i])
 
     def compute_dubin_path_to_state(self, car_frame_state):
@@ -110,6 +119,29 @@ class Base_DC_Reachable_Set(ReachableSet):
             for j in range(self.y_count):
                 for k in range(self.theta_count):
                     self.is_reachables[i, j, k], self.costs[i, j, k] = self.compute_dubin_path_to_state(self.index_to_coordinates(i, j, k))
+        reachables = np.argwhere(self.is_reachables)
+        reachable_states = np.zeros(reachables.shape)
+        for i in range(reachables.shape[0]):
+            reachable_states[i] = self.index_to_coordinates(*reachables[i])
+        #compute closest states
+        print('Computing closest reachable index...')
+        for i in range(self.x_count):
+            print('Completed %f %% in %f seconds' %(100*(i*1./self.x_count),(clock()-start_time)))
+            for j in range(self.y_count):
+                for k in range(self.theta_count):
+                    closest_ri=np.asarray([i, j, k])
+                    if self.is_reachables[i,j,k]:
+                        self.closest_reachable_index[i, j, k] = closest_ri
+                    else:
+                        diff = reachable_states-self.index_to_coordinates(*closest_ri)
+                        #L2 norm on (x,y,theta)
+                        diff_norm = np.linalg.norm(diff, axis=1)
+                        argmin_diff = np.argmin(diff_norm)
+                        self.closest_reachable_index[i, j, k] = reachables[argmin_diff]
+                        #for debugging
+                        # assert(self.is_reachables[i,j,k]==False)
+                        # p,q,r=self.closest_reachable_index[i, j, k]
+                        # assert(self.is_reachables[int(p),int(q),int(r)])
         print('Completed computation after %f seconds' %(clock()-start_time))
 
 if __name__=='__main__':
@@ -118,6 +150,7 @@ if __name__=='__main__':
     start_time = clock()
     np.save('precomputation_results/brs_is_reachables', base_dc_reachable_set.is_reachables)
     np.save('precomputation_results/brs_costs',base_dc_reachable_set.costs)
+    np.save('precomputation_results/closest_reachable_index', base_dc_reachable_set.closest_reachable_index)
     print('Stored file after %f seconds' % (clock() - start_time))
 
     # #For testing
