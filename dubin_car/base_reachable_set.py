@@ -13,8 +13,8 @@ class Base_DC_Reachable_Set(ReachableSet):
     '''
     A base reachable set for a Dubin's car located at (x,y,theta) = (0,0,0)
     '''
-    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_resolution=0.05,
-                 y_resolution=0.05, theta_resolution=0.01,turn_radius = 0.5, is_reachables= None, costs = None):
+    def __init__(self, x_range=np.asarray([0,10]), y_range=np.asarray([-5,5]), x_resolution=0.1,
+                 y_resolution=0.1, theta_resolution=0.05,turn_radius = 2, is_reachables= None, costs = None):
         ReachableSet.__init__(self)
         self.x_range = x_range
         self.y_range = y_range
@@ -69,6 +69,7 @@ class Base_DC_Reachable_Set(ReachableSet):
         :param car_frame_query_point:
         :return: Tuple (closest_state, closest_point_is_self.state)
         '''
+        #FIXME: This does not work. Need to do something like ray-tracing
         closest_state = np.zeros(3)
         closest_state[0] = min(max(car_frame_query_point[0], self.x_range[0]), self.x_range[1])
         closest_state[1] = min(max(car_frame_query_point[1], self.y_range[0]), self.y_range[1])

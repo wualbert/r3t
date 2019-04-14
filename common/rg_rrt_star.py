@@ -154,17 +154,30 @@ class ReachableSetTree:
     def __init__(self):
         pass
 
+    def insert(self, id, reachable_set):
+        raise('NotImplementedError')
+
+    def nearest_k_neighbor_ids(self, query_state, k=1):
+        raise('NotImplementedError')
+
+    def d_neighbor_ids(self, query_state, d = np.inf):
+        raise('NotImplementedError')
+
+class StateTree:
+    '''
+    Wrapper for a fast data structure that can help querying
+    '''
+    def __init__(self):
+        pass
+
     def insert(self, id, state):
         raise('NotImplementedError')
 
-    def nearest_k_neighbors(self, query_state, k=1):
-        raise('NotImplementedError')
-
-    def d_neighbors(self, query_state, d = np.inf):
+    def state_ids_in_reachable_set(self, query_reachable_set):
         raise('NotImplementedError')
 
 class RGRRTStar:
-    def __init__(self, root_state, compute_reachable_set, sampler, reachable_set_tree, path_class, rewire_radius = None):
+    def __init__(self, root_state, compute_reachable_set, sampler, reachable_set_tree, state_tree, path_class, rewire_radius = None):
         '''
         Base RG-RRT*
         :param root_state: The root state
@@ -181,6 +194,8 @@ class RGRRTStar:
         self.goal_state = None
         self.goal_node = None
         self.path_class = path_class
+        self.state_tree = state_tree()
+        self.state_tree.insert(self.root_id,self.root_node.state)
         self.reachable_set_tree = reachable_set_tree() #tree for fast node querying
         self.reachable_set_tree.insert(self.root_id, self.root_node.reachable_set)
         self.state_to_node_map = dict()
@@ -231,11 +246,10 @@ class RGRRTStar:
         #TODO: Timeout and other termination functionalities
         start = clock()
         self.goal_state = goal_state
-        goal_node = None
         while True:
             if stop_on_first_reach:
                 if self.goal_node is not None:
-                    print('Found path to goal in %f seconds after exploring %d nodes' % (
+                    print('Found path to goal with cost %f in %f seconds after exploring %d nodes' % (self.goal_node.cost_from_root,
                     clock() - start, self.node_tally))
                     return self.goal_node
             if clock()-start>allocated_time:
@@ -243,14 +257,14 @@ class RGRRTStar:
                     print('Unable to find path within %f seconds!' % (clock() - start))
                     return None
                 else:
-                    print('Found path to goal in %f seconds after exploring %d nodes' % (
+                    print('Found path to goal with cost %f in %f seconds after exploring %d nodes' % (self.goal_node.cost_from_root,
                     clock() - start, self.node_tally))
                     return self.goal_node
 
             #sample the state space
             random_sample = self.sampler()
             # map the states to nodes
-            nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbors(random_sample, k=1))  # FIXME: necessary to cast to list?
+            nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1))  # FIXME: necessary to cast to list?
             discard = True
             for i, nearest_state_id in enumerate(nearest_state_id_list):
                 nearest_node = self.state_to_node_map[nearest_state_id]
@@ -269,6 +283,7 @@ class RGRRTStar:
             #add the new node to the set tree
             new_state_id = hash(str(new_node.state))
             self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
+            self.state_tree.insert(new_state_id, new_node.state)
             self.state_to_node_map[new_state_id] = new_node
 
             #rewire the tree
@@ -291,11 +306,11 @@ class RGRRTStar:
             ball_radius = 3*new_node.cost_from_parent
         else:
             ball_radius=self.rewire_radius
-        rewire_candidate_states = list(self.reachable_set_tree.d_neighbors(new_node.state, ball_radius))
+        rewire_parent_candidate_states = list(self.reachable_set_tree.d_neighbor_ids(new_node.state, ball_radius))#FIXME
         #rewire the parent of the new node
         best_new_parent = None
         best_cost_to_new_node = new_node.cost_from_root
-        for cand_state in rewire_candidate_states:
+        for cand_state in rewire_parent_candidate_states:
             parent_candidate_node = self.state_to_node_map[cand_state]
             if parent_candidate_node==new_node.parent or parent_candidate_node==new_node:
                 continue
@@ -311,9 +326,10 @@ class RGRRTStar:
         if best_new_parent is not None:
             new_node.update_parent(best_new_parent)
 
+        cand_ids = self.state_tree.state_ids_in_reachable_set(new_node.reachable_set)
         #try to make the new node the candidate's parent
-        for cand_state in rewire_candidate_states:
-            candidate_node = self.state_to_node_map[cand_state]
+        for cand_id in cand_ids:
+            candidate_node = self.state_to_node_map[cand_id]
             if candidate_node == new_node.parent or candidate_node == self.root_node:
                 continue
             if not new_node.reachable_set.contains(candidate_node.state):

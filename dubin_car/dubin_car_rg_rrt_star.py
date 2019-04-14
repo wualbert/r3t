@@ -273,6 +273,21 @@ class DC_Map:
         # print(start,goal)
         return False
 
+class DC_StateTree(StateTree):
+    def __init__(self):
+        StateTree.__init__(self)
+        self.tree = index.Index()
+        self.state_dict = {}
+
+    def insert(self, state_id, state):
+        self.tree.insert(state_id, [state[0], state[1], state[0], state[1]])
+        self.state_dict[state_id] = state
+
+    def state_ids_in_reachable_set(self, query_reachable_set):
+        nearest_ids = list(self.tree.nearest([query_reachable_set.AABB.u[0],query_reachable_set.AABB.u[1],query_reachable_set.AABB.v[0],query_reachable_set.AABB.v[1]]))
+        return nearest_ids
+
+
 class DC_ReachableSetTree(ReachableSetTree):
     '''
     Wrapper for a fast data structure that can help querying
@@ -287,12 +302,12 @@ class DC_ReachableSetTree(ReachableSetTree):
         self.tree.insert(state_id, [reachable_set.AABB.u[0], reachable_set.AABB.u[1], reachable_set.AABB.v[0], reachable_set.AABB.v[1]])
         self.reachable_set_dict[state_id] = reachable_set
 
-    def nearest_k_neighbors(self, query_state, k=1):
+    def nearest_k_neighbor_ids(self, query_state, k=1):
         nearest_ids = list(self.tree.nearest([query_state[0],query_state[1],query_state[0],query_state[1]], k))
         nearest_ids.sort(key = lambda state_id: abs(angle_diff(self.reachable_set_dict[state_id].state[2], query_state[2]))) #sort nearest state ids by theta distance
         return nearest_ids[0:min(k, len(nearest_ids))]
 
-    def d_neighbors(self, query_state, d = np.inf):
+    def d_neighbor_ids(self, query_state, d = np.inf):
         return self.tree.intersection([query_state[0]-d/2,query_state[1]-d/2,query_state[0]+d/2,query_state[1]+d/2], objects=False)
 
 class DC_RGRRTStar(RGRRTStar):
@@ -306,4 +321,4 @@ class DC_RGRRTStar(RGRRTStar):
         '''
         def compute_reachable_set(state):
             return DC_ReachableSet(state,point_collides_with_obstacle)
-        RGRRTStar.__init__(self, root_state, compute_reachable_set, random_sampler, DC_ReachableSetTree, DC_Path, rewire_radius)
+        RGRRTStar.__init__(self, root_state, compute_reachable_set, random_sampler, DC_ReachableSetTree, DC_StateTree, DC_ReachableSet, rewire_radius)

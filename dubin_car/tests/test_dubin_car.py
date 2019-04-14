@@ -54,6 +54,26 @@ def test_fixed_small_boxy_world_long_time(time=15):
         return
     visualize_tree(rrt, world)
 
+def test_fixed_medium_boxy_world_hard(stop_on_first_reach,allocated_time):
+    root = np.asarray([0,0,np.pi/2])
+    goal = np.asarray([22,22,np.pi/4])
+    world_bound = AABB([(-5,-5),(25,25)])
+    world = DC_Map(world_bound)
+    box1=AABB([(-1,10),(9,15)])
+    box2=AABB([(11,7),(24,12)])
+    # box3 = AABB([(1, 4), (4, 17)])
+    box4 = AABB([(2, 1), (10, 8)])
+    obstacles = [box1, box2, box4]
+    for obs in obstacles:
+        world.add_obstacle(obs)
+    rrt = DC_RGRRTStar(root,world.point_collides_with_obstacle, world.random_sampler, rewire_radius=5)
+    goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=stop_on_first_reach,allocated_time=allocated_time)
+    if goal_node is None:
+        print('No path found!')
+        return
+    visualize_tree(rrt, world)
+    return goal_node.cost_from_root
+
 def test_fixed_ring_boxy_world():
     root = np.asarray([0,-37,0])
     goal = np.asarray([0,37,np.pi*3/4])
@@ -75,5 +95,5 @@ def test_fixed_ring_boxy_world():
     visualize_tree(rrt, world)
 
 if __name__ == '__main__':
-    test_fixed_small_boxy_world_long_time(30)
+    test_fixed_medium_boxy_world_hard(True,np.inf)
     plt.show()
