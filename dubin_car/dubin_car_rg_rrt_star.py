@@ -207,7 +207,7 @@ class DC_ReachableSet(ReachableSet):
         cost_to_go, car_frame_path = self.BASE_REACHABLE_SET.plan_collision_free_path_in_set(self.transform_to_car_frame(goal_state))
         world_frame_path = DC_Path(self.state, car_frame_path, self.turn_radius, cost=cost_to_go)
         #samples
-        sample_num = 50
+        sample_num = 200
         samples = np.linspace(0,1,sample_num)
         for i in range(0,sample_num):
             if self.is_collision(world_frame_path.get_fraction_point(samples[i])):
