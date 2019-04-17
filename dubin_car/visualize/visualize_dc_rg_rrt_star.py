@@ -6,6 +6,7 @@ import dubins
 
 from dubin_car.dubin_car_rg_rrt_star import *
 
+
 def visualize_tree(dc_rrt, world_map, visualize_all_nodes=True, visualize_all_paths=False, visualize_goal_path=True, visualize_obstacles=True, ax = None, fig=None):
     if ax is None or fig is None:
         fig, ax = plt.subplots()

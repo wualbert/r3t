@@ -6,6 +6,11 @@ RG-RRT*
 import numpy as np
 from time import clock
 
+import rospy
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
+from collections import deque
+
 class Path:
     #TODO
     def __init__(self):
@@ -203,6 +208,9 @@ class RGRRTStar:
         self.node_tally = 0
         self.rewire_radius=rewire_radius
 
+        self.tree_viz=rospy.Publisher('/tree', Marker, queue_size=100000)
+
+
     def create_child_node(self, parent_node, child_state,cost_from_parent = None, path_from_parent = None):
         '''
         Given a child state reachable from a parent node, create a node with that child state
@@ -301,6 +309,9 @@ class RGRRTStar:
                 self.rewire(goal_node)
                 self.goal_node=goal_node
 
+            #visualize tree
+            self.ros_visulaize()
+
 
     def rewire(self, new_node):
         rewire_parent_candidate_states = list(self.reachable_set_tree.d_neighbor_ids(new_node.state))
@@ -345,3 +356,31 @@ class RGRRTStar:
             if n is None:
                 break
         return states.reverse()
+
+    def ros_visulaize(self):
+        node_queue =deque()
+        node_queue.append(self.root_node)
+        tree_path_segments = []
+        while(len(node_queue)>0):
+            #pop from the top of the queue
+            node = node_queue.popleft()
+            #get the children of this node and add to the queue
+            children_nodes = node.children
+            node_queue.extend(children_nodes)
+            #visualize the state
+            #SLOW!
+            #reconstruct dubin's path on the fly
+            if node.path_from_parent is not None:
+                segs = node.path_from_parent.get_dubins_interpolated_path()
+                for i in range(segs.shape[0]-1):
+                    tree_path_segments.append([segs[i,0:2], segs[i+1,0:2]])
+        marker = Marker()
+        marker.type = marker.LINE_LIST
+        marker.color.a = 1
+        marker.color.b = 1
+        marker.scale.x = 0.1
+        marker.header.frame_id = '/map'
+        for tps in tree_path_segments:
+            marker.points.append(Point(tps[0][0], tps[0][1],0))
+            marker.points.append(Point(tps[1][0], tps[1][1],0))
+            self.tree_viz.publish(marker)
