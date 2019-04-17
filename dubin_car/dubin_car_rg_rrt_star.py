@@ -309,8 +309,8 @@ class DC_ReachableSetTree(ReachableSetTree):
         nearest_ids.sort(key = lambda state_id: abs(angle_diff(self.reachable_set_dict[state_id].state[2], query_state[2]))) #sort nearest state ids by theta distance
         return nearest_ids[0:min(k, len(nearest_ids))]
 
-    def d_neighbor_ids(self, query_state, d = np.inf):
-        return self.tree.intersection([query_state[0]-d/2,query_state[1]-d/2,query_state[0]+d/2,query_state[1]+d/2], objects=False)
+    def d_neighbor_ids(self, query_state):
+        return self.tree.intersection([query_state[0],query_state[1],query_state[0],query_state[1]], objects=False)
 
 class DC_RGRRTStar(RGRRTStar):
     def __init__(self, root_state, point_collides_with_obstacle, random_sampler, rewire_radius):

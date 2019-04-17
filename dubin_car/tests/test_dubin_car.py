@@ -81,7 +81,7 @@ def test_fixed_medium_boxy_world_optimality(try_duration,tries = 5, plot_routes 
     times[0] = total_duration
     nodes_explored[0] = rrt.node_tally
     if plot_routes:
-        fig, ax = visualize_tree(rrt, world)
+        fig, ax = visualize_tree(rrt, world,visualize_all_paths=True)
         ax.set_title('First solution (found in %.3f seconds)' % total_duration)
         plt.savefig("first_sol.png", dpi=150)
         plt.close()
@@ -95,7 +95,7 @@ def test_fixed_medium_boxy_world_optimality(try_duration,tries = 5, plot_routes 
         times[i] = total_duration
         nodes_explored[i] = rrt.node_tally
         if plot_routes:
-            fig, ax = visualize_tree(rrt, world)
+            fig, ax = visualize_tree(rrt, world,visualize_all_paths=True)
             ax.set_title('Solution after %.3f seconds' % total_duration)
             plt.savefig("try_"+str(i)+".png", dpi=150)
             plt.close()
@@ -130,12 +130,19 @@ def test_fixed_ring_boxy_world():
     for obs in obstacles:
         world.add_obstacle(obs)
     rrt = DC_RGRRTStar(root,world.point_collides_with_obstacle, world.random_sampler, rewire_radius=4)
+    start_time = clock()
     goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, allocated_time=np.inf)
     if goal_node is None:
         print('No path found!')
         return
-    visualize_tree(rrt, world)
+    fig, ax =  visualize_tree(rrt, world)
+    ax.set_title('Solution after %.3f seconds' % (clock()-start_time))
+    plt.savefig("first_sol.png", dpi=150)
+    goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=False, allocated_time=50)
+    fig, ax =  visualize_tree(rrt, world)
+    ax.set_title('Solution after %.3f seconds' % (clock()-start_time))
+    plt.savefig("plus_50.png", dpi=150)
+
 
 if __name__ == '__main__':
-    test_fixed_medium_boxy_world_optimality(5,30, plot_routes=True)
-    # plt.show()
+    test_fixed_medium_boxy_world_optimality(try_duration=5, plot_routes=True)
