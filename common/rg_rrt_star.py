@@ -303,12 +303,7 @@ class RGRRTStar:
 
 
     def rewire(self, new_node):
-        #FIXME: better bounding radius
-        if self.rewire_radius is None:
-            ball_radius = 3*new_node.cost_from_parent
-        else:
-            ball_radius=self.rewire_radius
-        rewire_parent_candidate_states = list(self.reachable_set_tree.d_neighbor_ids(new_node.state, ball_radius))#FIXME
+        rewire_parent_candidate_states = list(self.reachable_set_tree.d_neighbor_ids(new_node.state))
         #rewire the parent of the new node
         best_new_parent = None
         best_cost_to_new_node = new_node.cost_from_root
