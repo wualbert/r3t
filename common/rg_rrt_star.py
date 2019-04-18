@@ -231,6 +231,8 @@ class RGRRTStar:
                         parent=parent_node, path_from_parent=path_from_parent, cost_from_parent=cost_from_parent)
         parent_node.children.add(new_node)
         self.node_tally+=1
+        if self.node_tally%50 == 0:
+            print('Explored %d nodes' %self.node_tally)
         return new_node
 
     def extend(self, new_state, nearest_node):
@@ -310,7 +312,7 @@ class RGRRTStar:
                 self.goal_node=goal_node
 
             #visualize tree
-            self.ros_visulaize()
+            # self.ros_visulaize()
 
 
     def rewire(self, new_node):
