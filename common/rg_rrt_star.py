@@ -357,7 +357,7 @@ class RGRRTStar:
                 break
         return states.reverse()
 
-    def ros_visulaize(self):
+    def ros_visulaize(self, given_marker=None):
         node_queue =deque()
         node_queue.append(self.root_node)
         tree_path_segments = []
@@ -374,13 +374,66 @@ class RGRRTStar:
                 segs = node.path_from_parent.get_dubins_interpolated_path()
                 for i in range(segs.shape[0]-1):
                     tree_path_segments.append([segs[i,0:2], segs[i+1,0:2]])
-        marker = Marker()
-        marker.type = marker.LINE_LIST
-        marker.color.a = 1
-        marker.color.b = 1
-        marker.scale.x = 0.1
-        marker.header.frame_id = '/map'
+        if given_marker is None:
+            marker = Marker()
+            marker.type = Marker.LINE_LIST
+            marker.color.a = 1
+            marker.color.b = 1
+            marker.scale.x = 0.03
+            marker.header.frame_id = '/map'
+            marker.action=0
+        else:
+            marker=given_marker
         for tps in tree_path_segments:
             marker.points.append(Point(tps[0][0], tps[0][1],0))
             marker.points.append(Point(tps[1][0], tps[1][1],0))
-            self.tree_viz.publish(marker)
+            if given_marker is None:
+                self.tree_viz.publish(marker)
+            else:
+                return marker
+
+    @staticmethod
+    def visualize_solved_paths(publisher, tree_list, visualize_tree=True):
+        marker_id = 0
+        if visualize_tree:
+            for tree in tree_list:
+                marker = Marker()
+                marker.type = Marker.LINE_LIST
+                marker.color.a = 1
+                marker.color.b = 1
+                marker.scale.x = 0.03
+                marker.header.frame_id = '/map'
+                marker.action=0
+                marker.id=marker_id
+                marker=tree.ros_visulaize(marker)
+                publisher.publish(marker)
+                marker_id+=1
+        #visualize goal paths
+        goal_marker = Marker()
+        for tree in tree_list:
+            goal_marker.type = Marker.LINE_LIST
+            goal_marker.color.a = 1
+            goal_marker.color.g = 1
+            goal_marker.scale.x = 0.1
+            goal_marker.header.frame_id = '/map'
+            goal_marker.action=0
+            goal_marker.id = marker_id
+            marker_id +=1
+
+
+            node_pointer = tree.goal_node
+            tree_path_segments = []
+            while(node_pointer is not None):
+                #visualize the state
+                #SLOW!
+                #reconstruct dubin's path on the fly
+                if node_pointer.path_from_parent is not None:
+                    segs = node_pointer.path_from_parent.get_dubins_interpolated_path()
+                    for i in range(segs.shape[0]-1):
+                        tree_path_segments.append([segs[i,0:2], segs[i+1,0:2]])
+                node_pointer = node_pointer.parent
+            for tps in tree_path_segments:
+                goal_marker.points.append(Point(tps[0][0], tps[0][1],0))
+                goal_marker.points.append(Point(tps[1][0], tps[1][1],0))
+        publisher.publish(goal_marker)
+        #FIXME: tree marker disappears
