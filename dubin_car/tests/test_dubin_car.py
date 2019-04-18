@@ -1,7 +1,7 @@
 from dubin_car.dubin_car_rg_rrt_star import *
 from dubin_car.visualize.visualize_dc_rg_rrt_star import *
 import dubin_car.base_reachable_set
-from time import clock
+from timeit import default_timer
 
 def test_simple_empty_world():
     world_bound = AABB([(0, 0), (30, 30)])
@@ -74,9 +74,9 @@ def test_fixed_medium_boxy_world_optimality(try_duration,tries = 5, plot_routes 
     times = np.zeros(tries)
 
     #first try
-    start_time = clock()
+    start_time = default_timer()
     goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True)
-    total_duration = clock()-start_time
+    total_duration = default_timer()-start_time
     costs[0] = goal_node.cost_from_root
     times[0] = total_duration
     nodes_explored[0] = rrt.node_tally
@@ -87,9 +87,9 @@ def test_fixed_medium_boxy_world_optimality(try_duration,tries = 5, plot_routes 
         plt.close()
 
     for i in range(1,tries):
-        start_time = clock()
+        start_time = default_timer()
         goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=False,allocated_time=try_duration)
-        try_duration = clock()-start_time
+        try_duration = default_timer()-start_time
         total_duration+=try_duration
         costs[i] = goal_node.cost_from_root
         times[i] = total_duration
@@ -130,17 +130,17 @@ def test_fixed_ring_boxy_world():
     for obs in obstacles:
         world.add_obstacle(obs)
     rrt = DC_RGRRTStar(root,world.point_collides_with_obstacle, world.random_sampler, rewire_radius=4)
-    start_time = clock()
+    start_time = default_timer()
     goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, allocated_time=np.inf)
     if goal_node is None:
         print('No path found!')
         return
     fig, ax =  visualize_tree(rrt, world)
-    ax.set_title('Solution after %.3f seconds' % (clock()-start_time))
+    ax.set_title('Solution after %.3f seconds' % (default_timer()-start_time))
     plt.savefig("first_sol.png", dpi=150)
     goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=False, allocated_time=50)
     fig, ax =  visualize_tree(rrt, world)
-    ax.set_title('Solution after %.3f seconds' % (clock()-start_time))
+    ax.set_title('Solution after %.3f seconds' % (default_timer()-start_time))
     plt.savefig("plus_50.png", dpi=150)
 
 

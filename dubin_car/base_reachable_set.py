@@ -7,7 +7,7 @@ from collections import deque
 from utils.utils import *
 from bounding_box_closest_polytope.lib.box import AABB, point_in_box
 import dubins
-from time import clock
+from timeit import default_timer
 
 class Base_DC_Reachable_Set(ReachableSet):
     '''
@@ -60,10 +60,10 @@ class Base_DC_Reachable_Set(ReachableSet):
         :return: Tuple (cost_to_go, path). path is a Path class object
         '''
         if not self.contains(car_frame_goal_state):
-            print('This should never happen...')
-            print('tested goal state:', car_frame_goal_state)
-            print('self.contains', self.contains(car_frame_goal_state))
-            print('self.find_closest_state', self.find_closest_state(car_frame_goal_state))
+            # print('This should never happen...')
+            # print('tested goal state:', car_frame_goal_state)
+            # print('self.contains', self.contains(car_frame_goal_state))
+            # print('self.find_closest_state', self.find_closest_state(car_frame_goal_state))
             # print('self.is_reachable', self.is_reachables[self.find_closest_state(car_frame_goal_state)])
             return (np.inf, None)
         assert(self.contains(car_frame_goal_state))
@@ -113,16 +113,16 @@ class Base_DC_Reachable_Set(ReachableSet):
 
     def compute_base_reachable_set(self):
         print('Computing base reachable set...')
-        start_time = clock()
+        start_time = default_timer()
         for i in range(self.x_count):
-            print('Completed %f %% in %f seconds' %(100*(i*1./self.x_count),(clock()-start_time)))
+            print('Completed %f %% in %f seconds' %(100*(i*1./self.x_count),(default_timer()-start_time)))
             for j in range(self.y_count):
                 for k in range(self.theta_count):
                     self.is_reachables[i, j, k], self.costs[i, j, k] = self.compute_dubin_path_to_state(self.index_to_coordinates(i, j, k))
-        end_time_1 = clock()-start_time
+        end_time_1 = default_timer()-start_time
         print('Computed base reachable set in %f seconds' %end_time_1)
         print('Processing base reachable set...')
-        start_time_2 = clock()
+        start_time_2 = default_timer()
         all_reachables = np.argwhere(self.is_reachables)
         shell_reachables = []
         shell_reachable_states = []
@@ -153,14 +153,14 @@ class Base_DC_Reachable_Set(ReachableSet):
                 pass
         shell_reachables = np.asarray(shell_reachables)
         shell_reachable_states = np.asarray(shell_reachable_states)
-        end_time_2 = clock()-start_time_2
+        end_time_2 = default_timer()-start_time_2
         print('Processed base reachable set in %f seconds' %end_time_2)
 
         #compute closest states
         print('Computing closest reachable state...')
-        start_time_3=clock()
+        start_time_3=default_timer()
         for i in range(self.x_count):
-            print('Completed %f %% in %f seconds' %(100*(i*1./self.x_count),(clock()-start_time)))
+            print('Completed %f %% in %f seconds' %(100*(i*1./self.x_count),(default_timer()-start_time)))
             for j in range(self.y_count):
                 for k in range(self.theta_count):
                     closest_ri=np.asarray([i, j, k])
@@ -172,18 +172,18 @@ class Base_DC_Reachable_Set(ReachableSet):
                         diff_norm = np.linalg.norm(diff, axis=1)
                         argmin_diff = np.argmin(diff_norm)
                         self.closest_reachable_index[i, j, k] = shell_reachables[argmin_diff]
-        end_time_3 = clock()-start_time_3
+        end_time_3 = default_timer()-start_time_3
         print('Computed closest reachable state in %f seconds' %end_time_3)
         print('Finished precomputation in %f seconds' %(end_time_1+end_time_2+end_time_3))
 
 if __name__=='__main__':
     base_dc_reachable_set = Base_DC_Reachable_Set()
     print('Storing file...')
-    start_time = clock()
+    start_time = default_timer()
     np.save('precomputation_results/brs_is_reachables', base_dc_reachable_set.is_reachables)
     np.save('precomputation_results/brs_costs',base_dc_reachable_set.costs)
     np.save('precomputation_results/closest_reachable_index', base_dc_reachable_set.closest_reachable_index)
-    print('Stored file after %f seconds' % (clock() - start_time))
+    print('Stored file after %f seconds' % (default_timer() - start_time))
 
     # #For testing
     # for foo in range(100):
