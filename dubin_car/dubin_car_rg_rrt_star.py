@@ -115,13 +115,13 @@ class DC_ReachableSet(ReachableSet):
     # load base reachable set
     dir_path = os.path.dirname(os.path.realpath(__file__))
     print('Loading base reachable set...')
-    start_time = clock()
+    start_time = default_timer()
     brs_is_reachable = np.load(dir_path + '/precomputation_results/brs_is_reachables.npy')
     brs_costs = np.load(dir_path + '/precomputation_results/brs_costs.npy')
     closest_index = np.load(dir_path + '/precomputation_results/closest_reachable_index.npy')
 
     BASE_REACHABLE_SET = Base_DC_Reachable_Set(is_reachables=brs_is_reachable, costs=brs_costs, closest_index=closest_index)
-    print('Loaded base reachable set after %f seconds' % (clock() - start_time))
+    print('Loaded base reachable set after %f seconds' % (default_timer() - start_time))
 
 
     def __init__(self, state, is_collision):#, state, planner, in_set, collision_test):
@@ -205,6 +205,8 @@ class DC_ReachableSet(ReachableSet):
         '''
         #TODO: Support for partial planning
         cost_to_go, car_frame_path = self.BASE_REACHABLE_SET.plan_collision_free_path_in_set(self.transform_to_car_frame(goal_state))
+        if cost_to_go ==np.inf:
+            return np.inf, None
         world_frame_path = DC_Path(self.state, car_frame_path, self.turn_radius, cost=cost_to_go)
         #samples
         sample_num = 50
@@ -306,7 +308,9 @@ class DC_ReachableSetTree(ReachableSetTree):
 
     def nearest_k_neighbor_ids(self, query_state, k=1):
         nearest_ids = list(self.tree.nearest([query_state[0],query_state[1],query_state[0],query_state[1]], k))
-        nearest_ids.sort(key = lambda state_id: abs(angle_diff(self.reachable_set_dict[state_id].state[2], query_state[2]))) #sort nearest state ids by theta distance
+        # nearest_ids.sort(key = lambda state_id: abs(angle_diff(self.reachable_set_dict[state_id].state[2], query_state[2]))) #sort nearest state ids by theta distance
+        nearest_ids.sort(key = lambda state_id: self.reachable_set_dict[state_id].plan_collision_free_path_in_set(query_state)[0])
+
         return nearest_ids[0:min(k, len(nearest_ids))]
 
     def d_neighbor_ids(self, query_state):

@@ -4,7 +4,7 @@ RG-RRT*
 '''
 
 import numpy as np
-from time import clock
+from timeit import default_timer
 
 class Path:
     #TODO
@@ -244,21 +244,21 @@ class RGRRTStar:
         :return: The goal node as a Node object. If no path is found, None is returned. self.goal_node is set to the return value after running.
         '''
         #TODO: Timeout and other termination functionalities
-        start = clock()
+        start = default_timer()
         self.goal_state = goal_state
         while True:
             if stop_on_first_reach:
                 if self.goal_node is not None:
                     print('Found path to goal with cost %f in %f seconds after exploring %d nodes' % (self.goal_node.cost_from_root,
-                    clock() - start, self.node_tally))
+                    default_timer() - start, self.node_tally))
                     return self.goal_node
-            if clock()-start>allocated_time:
+            if default_timer()-start>allocated_time:
                 if self.goal_node is None:
-                    print('Unable to find path within %f seconds!' % (clock() - start))
+                    print('Unable to find path within %f seconds!' % (default_timer() - start))
                     return None
                 else:
                     print('Found path to goal with cost %f in %f seconds after exploring %d nodes' % (self.goal_node.cost_from_root,
-                    clock() - start, self.node_tally))
+                    default_timer() - start, self.node_tally))
                     return self.goal_node
 
             #sample the state space
