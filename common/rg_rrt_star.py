@@ -246,6 +246,15 @@ class RGRRTStar:
         #TODO: Timeout and other termination functionalities
         start = default_timer()
         self.goal_state = goal_state
+        # For cases where root node can lead directly to goal
+        if self.root_node.reachable_set.contains(goal_state): #FIXME: support for goal region
+            # check for obstacles
+            cost_to_go, path = self.root_node.reachable_set.plan_collision_free_path_in_set(goal_state)
+            if cost_to_go != np.inf:
+                # add the goal node to the tree
+                goal_node = self.create_child_node(self.root_node, goal_state)
+                self.rewire(goal_node)
+                self.goal_node=goal_node
         while True:
             if stop_on_first_reach:
                 if self.goal_node is not None:
