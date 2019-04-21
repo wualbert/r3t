@@ -262,6 +262,11 @@ class RGRRTStar:
             if cost_to_go != np.inf:
                 # add the goal node to the tree
                 goal_node = self.create_child_node(self.root_node, goal_state)
+                goal_state_id = hash(str(goal_node.state))
+                self.reachable_set_tree.insert(goal_state_id, goal_node.reachable_set)
+                self.state_tree.insert(goal_state_id, goal_node.state)
+                self.state_to_node_map[goal_state_id] = goal_node
+
                 self.rewire(goal_node)
                 self.goal_node=goal_node
         while True:
@@ -316,6 +321,11 @@ class RGRRTStar:
                     continue
                 # add the goal node to the tree
                 goal_node = self.create_child_node(new_node, goal_state)
+                goal_state_id = hash(str(goal_node.state))
+                self.reachable_set_tree.insert(goal_state_id, goal_node.reachable_set)
+                self.state_tree.insert(goal_state_id, goal_node.state)
+                self.state_to_node_map[goal_state_id] = goal_node
+
                 self.rewire(goal_node)
                 self.goal_node=goal_node
 

@@ -38,7 +38,6 @@ class Base_DC_Reachable_Set(ReachableSet):
             self.closest_reachable_index = closest_index
 
     def contains(self, car_frame_goal_state):
-
         '''
         Check if the state given is in this set
         :param state: query state
@@ -51,6 +50,7 @@ class Base_DC_Reachable_Set(ReachableSet):
         #actually try to query
         x_index, y_index, theta_index = self.coordinates_to_index(car_frame_goal_state)
         return self.is_reachables[x_index, y_index, theta_index]
+
 
     def plan_collision_free_path_in_set(self, car_frame_goal_state):
         '''
