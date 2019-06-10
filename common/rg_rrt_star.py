@@ -161,6 +161,12 @@ class ReachableSetTree:
         raise('NotImplementedError')
 
     def d_neighbor_ids(self, query_state, d = np.inf):
+        '''
+        For rewiring only
+        :param query_state:
+        :param d:
+        :return:
+        '''
         raise('NotImplementedError')
 
 class StateTree:
@@ -174,6 +180,11 @@ class StateTree:
         raise('NotImplementedError')
 
     def state_ids_in_reachable_set(self, query_reachable_set):
+        '''
+        For rewiring only
+        :param query_reachable_set:
+        :return:
+        '''
         raise('NotImplementedError')
 
 class RGRRTStar:
@@ -235,7 +246,7 @@ class RGRRTStar:
         new_node = self.create_child_node(nearest_node, new_state, cost_to_go, path)
         return True, new_node
 
-    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False):
+    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=True):
         '''
         Builds a RG-RRT* Tree to solve for the path to a goal.
         :param goal_state:  The goal for the planner.
@@ -277,9 +288,9 @@ class RGRRTStar:
             discard = True
             for i, nearest_state_id in enumerate(nearest_state_id_list):
                 nearest_node = self.state_to_node_map[nearest_state_id]
-                if nearest_node.reachable_set.contains(random_sample):
-                    # find the closest state in the reachable set and use it to extend the tree
-                    new_state, discard = nearest_node.reachable_set.find_closest_state(random_sample)
+                # find the closest state in the reachable set and use it to extend the tree
+                new_state, discard = nearest_node.reachable_set.find_closest_state(random_sample)
+                print(new_state,discard)
                 if not discard:
                     break
             if discard:  # No state in the reachable set is better the the nearest state
@@ -298,7 +309,8 @@ class RGRRTStar:
             self.state_to_node_map[new_state_id] = new_node
 
             #rewire the tree
-            self.rewire(new_node)
+            if rewire:
+                self.rewire(new_node)
             #In "find path" mode, if the goal is in the reachable set, we are done
             if new_node.reachable_set.contains(goal_state): #FIXME: support for goal region
                 # check for obstacles
