@@ -6,33 +6,44 @@ from rtree import index #fixme
 from collections import deque
 
 class PolytopeReachableSet(ReachableSet):
-    def __init__(self, polytope, epsilon=1e-3):
+    def __init__(self, parent_state, polytope, epsilon=1e-3):
+        ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope = polytope
         self.epsilon = epsilon
-        self.parent_distance = distance_point(self.polytope, self.parent_state)
-        assert(self.parent_distance<self.epsilon)
+        self.parent_distance = distance_point(self.polytope, self.parent_state)[0]
+        # assert(self.parent_distance<self.epsilon)
 
     def contains(self, goal_state):
-        if distance_point(self.polytope, goal_state) < self.epsilon:
+        # print(distance_point(self.polytope, goal_state)[0])
+        # print(self.polytope)
+        if distance_point(self.polytope, goal_state)[0] < self.epsilon:
             return True
         return False
+
 
     def find_closest_state(self, query_point):
         '''
         Find the closest state from the query point to a given polytope
         :param query_point:
-        :return:
+        :return: Tuple (closest_point, closest_point_is_self.state)
         '''
+        closest_point = distance_point(self.polytope, query_point)[1]
+        closest_point = np.atleast_2d(closest_point).reshape(-1,1)
+        # print(closest_point)
+        return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
+
+    def plan_collision_free_path_in_set(self, goal_state):
+        #fixme: correct cost function
+        return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
 
 
 class PolytopePath:
     def __init__(self):
         self.path = deque()
-
     def __repr__(self):
         return str(self.path)
     def append(self, path):
-        self.path.append(path)
+        self.path+=path #TODO
 
 class PolytopeReachableSetTree(ReachableSetTree):
     '''
@@ -53,7 +64,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
             best_id = None
             best_distance = np.inf
             for id in self.polytope_reachable_sets.keys():
-                d = distance_point(self.polytope_reachable_sets[id].polytope, query_state)
+                d = distance_point(self.polytope_reachable_sets[id].polytope, query_state)[0]
                 if d<best_distance:
                     best_id = id
                     best_distance = d
@@ -86,6 +97,6 @@ class ContinuousSystem_RGRRTStar(RGRRTStar):
             :param h:
             :return:
             '''
-            reachable_set_polytope = self.sys.get_reachable_zonotope(state)
-            return PolytopeReachableSet(reachable_set_polytope)
+            reachable_set_polytope = self.sys.get_reachable_zonotope(state, step_size=self.step_size)
+            return PolytopeReachableSet(state,reachable_set_polytope)
         RGRRTStar.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, ContinuousSystem_StateTree, PolytopePath)
