@@ -6,11 +6,12 @@ from rtree import index #fixme
 from collections import deque
 
 class PolytopeReachableSet(ReachableSet):
-    def __init__(self, parent_state, polytope, epsilon=1e-3):
+    def __init__(self, parent_state, polytope, epsilon=1e-3, contains_goal_function = None):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope = polytope
         self.epsilon = epsilon
         self.parent_distance = distance_point(self.polytope, self.parent_state)[0]
+        self.contains_goal_function = contains_goal_function
         # assert(self.parent_distance<self.epsilon)
 
     def contains(self, goal_state):
@@ -20,6 +21,11 @@ class PolytopeReachableSet(ReachableSet):
             return True
         return False
 
+    def contains_goal(self, goal_state):
+        if self.contains_goal is None:
+            return self.contains(goal_state)
+        else:
+            return self.contains_goal_function(self, goal_state)
 
     def find_closest_state(self, query_point):
         '''
@@ -88,9 +94,10 @@ class ContinuousSystem_StateTree(StateTree):
 
 
 class ContinuousSystem_RGRRTStar(RGRRTStar):
-    def __init__(self, sys, sampler, step_size):
+    def __init__(self, sys, sampler, step_size, contains_goal_function = None):
         self.sys = sys
         self.step_size = step_size
+        self.contains_goal_function = contains_goal_function
         def compute_reachable_set(state):
             '''
             Compute zonotopic reachable set using the system
@@ -98,5 +105,5 @@ class ContinuousSystem_RGRRTStar(RGRRTStar):
             :return:
             '''
             reachable_set_polytope = self.sys.get_reachable_zonotope(state, step_size=self.step_size)
-            return PolytopeReachableSet(state,reachable_set_polytope)
+            return PolytopeReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function)
         RGRRTStar.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, ContinuousSystem_StateTree, PolytopePath)
