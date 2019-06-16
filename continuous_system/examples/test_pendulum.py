@@ -12,24 +12,33 @@ import os
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.7],[0.7]]))
+    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.3],[0.3]]))
     goal_state = np.asarray([np.pi,0.0])
-    def sampler():
+    def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = (rnd[0]-0.5)*2.5*np.pi
-        rnd[1] = (rnd[1]-0.5)*5
+        rnd[1] = (rnd[1]-0.5)*6
         goal_bias = np.random.rand(1)
         if goal_bias<0.1:
             return goal_state
         return rnd
 
+    def gaussian_mixture_sampler():
+        gaussian_ratio = 0.1
+        rnd = np.random.rand(2)
+        rnd[0] = np.random.normal(goal_state[0], 0.5)
+        rnd[1] = np.random.normal(goal_state[1], 0.5)
+        if np.random.rand(1) < gaussian_ratio:
+            return uniform_sampler()
+        return rnd
+
     def contains_goal_function(reachable_set, goal_state):
         distance, projection = distance_point(reachable_set.polytope, goal_state)
-        if abs(projection[0]-goal_state[0])<1e-2 and abs(projection[1]-goal_state[1])<5e-2:
+        if abs(projection[0]-goal_state[0])<1e-1 and abs(projection[1]-goal_state[1])<1e-1:
             return True
         return False
 
-    rrt = ContinuousSystem_RGRRTStar(pendulum_system, sampler, 0.1, contains_goal_function=contains_goal_function)
+    rrt = ContinuousSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, 0.3, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
