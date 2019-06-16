@@ -4,7 +4,7 @@ from timeit import default_timer
 from polytope_symbolic_system.examples.pendulum import Pendulum
 from rg_rrt_star.continuous_system.continuous_system_rg_rrt_star import ContinuousSystem_RGRRTStar
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
-from closest_polytope.pypolycontain.lib.AH_polytope import distance_point
+from pypolycontain.lib.AH_polytope import distance_point
 from utils.visualization import visualize_node_tree_2D
 import time
 
@@ -52,8 +52,8 @@ def test_pendulum_planning():
         # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
-        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=10)
-        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=10)
+        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
+        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
         ax.set_aspect('equal')
         plt.xlabel('$x$')
         plt.ylabel('$\dot{x}$')

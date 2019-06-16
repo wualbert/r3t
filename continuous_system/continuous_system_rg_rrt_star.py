@@ -1,7 +1,7 @@
 import pydrake
 from rg_rrt_star.common.rg_rrt_star import *
 from polytope_symbolic_system.common.symbolic_system import *
-from closest_polytope.pypolycontain.lib.AH_polytope import distance_point
+from pypolycontain.lib.AH_polytope import distance_point
 from rtree import index #fixme
 from collections import deque
 
@@ -34,7 +34,7 @@ class PolytopeReachableSet(ReachableSet):
         :return: Tuple (closest_point, closest_point_is_self.state)
         '''
         closest_point = distance_point(self.polytope, query_point)[1]
-        closest_point = np.atleast_2d(closest_point).reshape(-1,1)
+        closest_point = np.ndarray.flatten(closest_point)
         # print(closest_point, self.parent_state)
         return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
 

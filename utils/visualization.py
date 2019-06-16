@@ -18,8 +18,8 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None):
             node_queue.extend(list(node.children))
             for child in node.children:
                 lines.append([np.ndarray.flatten(node.state), np.ndarray.flatten(child.state)])
-        ax.scatter(*np.ndarray.flatten(node.state), c='gray', s=2)
+        ax.scatter(*np.ndarray.flatten(node.state), c='gray', s=1)
     # print('plotted %d nodes' %i)
-    lc = mc.LineCollection(lines, linewidths=0.5, colors='gray')
+    lc = mc.LineCollection(lines, linewidths=0.25, colors='gray')
     ax.add_collection(lc)
     return fig, ax
