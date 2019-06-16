@@ -35,11 +35,13 @@ class PolytopeReachableSet(ReachableSet):
         '''
         closest_point = distance_point(self.polytope, query_point)[1]
         closest_point = np.atleast_2d(closest_point).reshape(-1,1)
-        # print(closest_point)
+        # print(closest_point, self.parent_state)
         return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
 
     def plan_collision_free_path_in_set(self, goal_state):
         #fixme: correct cost function
+        if not self.contains(goal_state):
+            return np.inf, None
         return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
 
 

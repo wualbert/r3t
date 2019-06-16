@@ -234,18 +234,16 @@ class RGRRTStar:
         # Update the nodes
         # compute the cost to go and path to reach from parent
         # if cost_from_parent is None or path_from_parent is None:
-        assert (parent_node.reachable_set.contains(child_state))
+        # assert (parent_node.reachable_set.contains(child_state))
         cost_from_parent, path_from_parent = parent_node.reachable_set.plan_collision_free_path_in_set(child_state)
 
         # construct a new node
         new_node = Node(child_state, self.compute_reachable_set(child_state),
                         parent=parent_node, path_from_parent=path_from_parent, cost_from_parent=cost_from_parent)
         parent_node.children.add(new_node)
-        self.node_tally+=1
         return new_node
 
     def extend(self, new_state, nearest_node):
-
         # check for obstacles
         cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
         #FIXME: Support for partial extensions
@@ -269,12 +267,13 @@ class RGRRTStar:
         if self.root_node.reachable_set.contains_goal(goal_state):
             # check for obstacles
             cost_to_go, path = self.root_node.reachable_set.plan_collision_free_path_in_set(goal_state)
-            if cost_to_go != np.inf:
+            # if cost_to_go != np.inf:  #allow for fuzzy goal check
                 # add the goal node to the tree
-                goal_node = self.create_child_node(self.root_node, goal_state)
-                if rewire:
-                    self.rewire(goal_node)
-                self.goal_node=goal_node
+            goal_node = self.create_child_node(self.root_node, goal_state)
+            if rewire:
+                self.rewire(goal_node)
+            self.goal_node=goal_node
+
         while True:
             if stop_on_first_reach:
                 if self.goal_node is not None:
@@ -304,19 +303,28 @@ class RGRRTStar:
                     break
             if discard:  # No state in the reachable set is better the the nearest state
                 continue
-            #sanity check to prevent numerical errors
-            if not nearest_node.reachable_set.contains(new_state):
-                continue
+            # #sanity check to prevent numerical errors
+            # if not nearest_node.reachable_set.contains(new_state):
+            #     continue
             is_extended, new_node = self.extend(new_state, nearest_node)
             if not is_extended: #extension failed
                 continue
 
-            #add the new node to the set tree
+            #add the new node to the set tree if the new node is not already in the tree
             new_state_id = hash(str(new_node.state))
+            if new_state_id in self.state_to_node_map:
+                continue
             self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
             self.state_tree.insert(new_state_id, new_node.state)
+            try:
+                assert(new_state_id not in self.state_to_node_map)
+            except:
+                print('State id hash collision!')
+                print('Original state is ', self.state_to_node_map[new_state_id].state)
+                print('Attempting to insert', new_node.state)
+                raise AssertionError
             self.state_to_node_map[new_state_id] = new_node
-
+            self.node_tally = len(self.state_to_node_map)
             #rewire the tree
             if rewire:
                 self.rewire(new_node)
@@ -324,8 +332,9 @@ class RGRRTStar:
             if new_node.reachable_set.contains_goal(goal_state): #FIXME: support for goal region
                 # check for obstacles
                 cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
-                if cost_to_go == np.inf:
-                    continue
+                #allow for fuzzy goal check
+                # if cost_to_go == np.inf:
+                #     continue
                 # add the goal node to the tree
                 goal_node = self.create_child_node(new_node, goal_state)
                 if rewire:
