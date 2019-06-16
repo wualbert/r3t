@@ -7,6 +7,8 @@ from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as v
 from pypolycontain.lib.AH_polytope import distance_point
 from utils.visualization import visualize_node_tree_2D
 import time
+from datetime import datetime
+import os
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
@@ -15,7 +17,7 @@ def test_pendulum_planning():
     def sampler():
         rnd = np.random.rand(2)
         rnd[0] = (rnd[0]-0.5)*2.5*np.pi
-        rnd[1] = (rnd[1]-0.5)*20
+        rnd[1] = (rnd[1]-0.5)*5
         goal_bias = np.random.rand(1)
         if goal_bias<0.1:
             return goal_state
@@ -27,13 +29,15 @@ def test_pendulum_planning():
             return True
         return False
 
-    rrt = ContinuousSystem_RGRRTStar(pendulum_system, sampler, 0.7, contains_goal_function=contains_goal_function)
+    rrt = ContinuousSystem_RGRRTStar(pendulum_system, sampler, 0.1, contains_goal_function=contains_goal_function)
     found_goal = False
-    experiment_name = str(int(default_timer()))
+    experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
+
     duration = 0
+    os.makedirs('RRT_'+experiment_name)
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 5) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -59,7 +63,7 @@ def test_pendulum_planning():
         plt.ylabel('$\dot{x}$')
         duration += (end_time-start_time)
         plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
-        plt.savefig('RRT_'+experiment_name+'_%.2f_seconds.png' % duration, dpi=500)
+        plt.savefig('RRT_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
         # plt.show()
         plt.clf()
         plt.close()
