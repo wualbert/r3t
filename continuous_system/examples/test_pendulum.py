@@ -24,11 +24,11 @@ def test_pendulum_planning():
         return rnd
 
     def gaussian_mixture_sampler():
-        gaussian_ratio = 0.1
+        gaussian_ratio = 0.4
         rnd = np.random.rand(2)
-        rnd[0] = np.random.normal(goal_state[0], 0.5)
-        rnd[1] = np.random.normal(goal_state[1], 0.5)
-        if np.random.rand(1) < gaussian_ratio:
+        rnd[0] = np.random.normal(goal_state[0],1)
+        rnd[1] = np.random.normal(goal_state[1],1)
+        if np.random.rand(1) > gaussian_ratio:
             return uniform_sampler()
         return rnd
 
