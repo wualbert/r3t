@@ -2,8 +2,9 @@ import pydrake
 from rg_rrt_star.common.rg_rrt_star import *
 from polytope_symbolic_system.common.symbolic_system import *
 from pypolycontain.lib.AH_polytope import distance_point
-from rtree import index #fixme
 from collections import deque
+from rtree import index
+from closest_polytope.bounding_box.polytope_tree import PolytopeTree
 
 class PolytopeReachableSet(ReachableSet):
     def __init__(self, parent_state, polytope, epsilon=1e-3, contains_goal_function = None):
@@ -55,28 +56,31 @@ class PolytopePath:
 
 class PolytopeReachableSetTree(ReachableSetTree):
     '''
-    Naive implementation of polytope tree
+    Polytopic reachable set with PolytopeTree
     '''
-    def __init__(self):
-        ReachableSetTree.__init__(self)
-        self.polytope_reachable_sets = {}
+    def __init__(self, key_vertex_count = 0):
+        self.polytope_tree = None
+        self.id_to_reachable_sets = {}
+        self.polytope_to_id = {}
+        self.key_vertex_count = key_vertex_count
 
     def insert(self, id, reachable_set):
-        self.polytope_reachable_sets[id] = reachable_set
+        if self.polytope_tree is None:
+            self.polytope_tree = PolytopeTree(np.array([reachable_set.polytope]), key_vertex_count=self.key_vertex_count)
+        else:
+            self.polytope_tree.insert(np.array([reachable_set.polytope]))
+        self.id_to_reachable_sets[id] = reachable_set
+        self.polytope_to_id[reachable_set.polytope] = id
 
     def nearest_k_neighbor_ids(self, query_state, k=1):
         #FIXME: this implementation is slow
         if k>1:
             raise NotImplementedError
         else:
-            best_id = None
-            best_distance = np.inf
-            for id in self.polytope_reachable_sets.keys():
-                d = distance_point(self.polytope_reachable_sets[id].polytope, query_state)[0]
-                if d<best_distance:
-                    best_id = id
-                    best_distance = d
-            return [best_id]
+            if self.polytope_tree is None:
+                return None
+            best_polytope = self.polytope_tree.find_closest_polytopes(query_state)[0]
+            return [self.polytope_to_id[best_polytope]]
 
     def d_neighbor_ids(self, query_state, d = np.inf):
         raise('NotImplementedError')

@@ -12,7 +12,7 @@ import os
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.3],[0.3]]))
+    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.2],[0.2]]))
     goal_state = np.asarray([np.pi,0.0])
     def uniform_sampler():
         rnd = np.random.rand(2)
@@ -24,11 +24,11 @@ def test_pendulum_planning():
         return rnd
 
     def gaussian_mixture_sampler():
-        gaussian_ratio = 0.1
+        gaussian_ratio = 0.4
         rnd = np.random.rand(2)
-        rnd[0] = np.random.normal(goal_state[0], 0.5)
-        rnd[1] = np.random.normal(goal_state[1], 0.5)
-        if np.random.rand(1) < gaussian_ratio:
+        rnd[0] = np.random.normal(goal_state[0],1)
+        rnd[1] = np.random.normal(goal_state[1],1)
+        if np.random.rand(1) > gaussian_ratio:
             return uniform_sampler()
         return rnd
 
@@ -38,7 +38,7 @@ def test_pendulum_planning():
             return True
         return False
 
-    rrt = ContinuousSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, 0.3, contains_goal_function=contains_goal_function)
+    rrt = ContinuousSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, 0.2, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -50,7 +50,7 @@ def test_pendulum_planning():
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
-        polytope_reachable_sets = rrt.reachable_set_tree.polytope_reachable_sets.values()
+        polytope_reachable_sets = rrt.reachable_set_tree.id_to_reachable_sets.values()
         reachable_polytopes = []
         explored_states = []
         for prs in polytope_reachable_sets:
