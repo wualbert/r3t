@@ -38,7 +38,7 @@ def test_pendulum_planning():
             return True
         return False
 
-    rrt = ContinuousSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, 0.1, contains_goal_function=contains_goal_function)
+    rrt = ContinuousSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, 0.2, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 

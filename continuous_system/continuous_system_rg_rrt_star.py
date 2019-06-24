@@ -5,6 +5,8 @@ from pypolycontain.lib.AH_polytope import distance_point
 from collections import deque
 from rtree import index
 from closest_polytope.bounding_box.polytope_tree import PolytopeTree
+from closest_polytope.bounding_box.box import AH_polytope_to_box
+
 
 class PolytopeReachableSet(ReachableSet):
     def __init__(self, parent_state, polytope, epsilon=1e-3, contains_goal_function = None):
@@ -42,7 +44,12 @@ class PolytopeReachableSet(ReachableSet):
     def plan_collision_free_path_in_set(self, goal_state):
         #fixme: correct cost function
         if not self.contains(goal_state):
-            return np.inf, None
+            return np.linalg.norm(self.parent_state-goal_state), None
+        return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
+
+    def plan_collision_free_path_in_set_for_goal(self, goal_state):
+        #dirty workaround for fuzzy goal check
+        #does not return infinity
         return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
 
 
@@ -63,17 +70,26 @@ class PolytopeReachableSetTree(ReachableSetTree):
         self.id_to_reachable_sets = {}
         self.polytope_to_id = {}
         self.key_vertex_count = key_vertex_count
+        # for d_neighbor_ids
+        # self.state_id_to_state = {}
+        # self.state_idx = None
+        # self.state_tree_p = index.Property()
 
     def insert(self, id, reachable_set):
         if self.polytope_tree is None:
             self.polytope_tree = PolytopeTree(np.array([reachable_set.polytope]), key_vertex_count=self.key_vertex_count)
+            # for d_neighbor_ids
+            # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
         else:
             self.polytope_tree.insert(np.array([reachable_set.polytope]))
         self.id_to_reachable_sets[id] = reachable_set
         self.polytope_to_id[reachable_set.polytope] = id
+        # for d_neighbor_ids
+        # state_id = hash(str(reachable_set.parent_state))
+        # self.state_idx.insert(state_id, np.repeat(reachable_set.parent_state, 2))
+        # self.state_id_to_state[state_id] = reachable_set.parent_state
 
     def nearest_k_neighbor_ids(self, query_state, k=1):
-        #FIXME: this implementation is slow
         if k>1:
             raise NotImplementedError
         else:
@@ -83,21 +99,29 @@ class PolytopeReachableSetTree(ReachableSetTree):
             return [self.polytope_to_id[best_polytope]]
 
     def d_neighbor_ids(self, query_state, d = np.inf):
-        raise('NotImplementedError')
+        '''
+
+        :param query_state:
+        :param d:
+        :return:
+        '''
+        # return self.state_idx.intersection(, objects=False)
+        raise NotImplementedError
 
 class ContinuousSystem_StateTree(StateTree):
     def __init__(self):
         StateTree.__init__(self)
-        self.tree = index.Index()
-        self.state_dict = {}
+        self.state_id_to_state = {}
+        self.state_tree_p = index.Property()
+        self.state_idx = index.Index()
 
     def insert(self, state_id, state):
-        self.tree.insert(state_id, np.asarray([state[0], state[1],state[0], state[1]]))
-        self.state_dict[state_id] = state
+        self.state_idx.insert(state_id, np.concatenate([state,state]))
+        self.state_id_to_state[state_id] = state
 
     def state_ids_in_reachable_set(self, query_reachable_set):
-        raise('NotImplementedError')
-
+        lu = AH_polytope_to_box(query_reachable_set.polytope) #FIXME: Memoize the polytope's AABB
+        return list(self.state_idx.intersection(np.repeat(lu,2)))
 
 class ContinuousSystem_RGRRTStar(RGRRTStar):
     def __init__(self, sys, sampler, step_size, contains_goal_function = None):

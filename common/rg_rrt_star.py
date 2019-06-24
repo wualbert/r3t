@@ -343,25 +343,25 @@ class RGRRTStar:
 
 
     def rewire(self, new_node):
-        rewire_parent_candidate_states = list(self.reachable_set_tree.d_neighbor_ids(new_node.state))
-        #rewire the parent of the new node
-        best_new_parent = None
-        best_cost_to_new_node = new_node.cost_from_root
-        for cand_state in rewire_parent_candidate_states:
-            parent_candidate_node = self.state_to_node_map[cand_state]
-            if parent_candidate_node==new_node.parent or parent_candidate_node==new_node:
-                continue
-            #check if it's better to connect to new node through the candidate
-            if not parent_candidate_node.reachable_set.contains(new_node.state):
-                continue
-            cost_to_go, path = parent_candidate_node.reachable_set.plan_collision_free_path_in_set(new_node.state)
-            if parent_candidate_node.cost_from_root+cost_to_go < best_cost_to_new_node:
-                best_new_parent = parent_candidate_node
-                best_cost_to_new_node = parent_candidate_node.cost_from_root+cost_to_go
-
-        #update if the best parent is changed
-        if best_new_parent is not None:
-            new_node.update_parent(best_new_parent)
+        # rewire_parent_candidate_states = list(self.reachable_set_tree.d_neighbor_ids(new_node.state))
+        # #rewire the parent of the new node
+        # best_new_parent = None
+        # best_cost_to_new_node = new_node.cost_from_root
+        # for cand_state in rewire_parent_candidate_states:
+        #     parent_candidate_node = self.state_to_node_map[cand_state]
+        #     if parent_candidate_node==new_node.parent or parent_candidate_node==new_node:
+        #         continue
+        #     #check if it's better to connect to new node through the candidate
+        #     if not parent_candidate_node.reachable_set.contains(new_node.state):
+        #         continue
+        #     cost_to_go, path = parent_candidate_node.reachable_set.plan_collision_free_path_in_set(new_node.state)
+        #     if parent_candidate_node.cost_from_root+cost_to_go < best_cost_to_new_node:
+        #         best_new_parent = parent_candidate_node
+        #         best_cost_to_new_node = parent_candidate_node.cost_from_root+cost_to_go
+        #
+        # #update if the best parent is changed
+        # if best_new_parent is not None:
+        #     new_node.update_parent(best_new_parent)
 
         cand_ids = self.state_tree.state_ids_in_reachable_set(new_node.reachable_set)
         #try to make the new node the candidate's parent
