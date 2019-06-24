@@ -247,7 +247,7 @@ class RGRRTStar:
         # check for obstacles
         cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
         #FIXME: Support for partial extensions
-        if cost_to_go == np.inf:
+        if path is None:
             return False, None
         new_node = self.create_child_node(nearest_node, new_state, cost_to_go, path)
         return True, new_node

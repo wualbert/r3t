@@ -44,12 +44,7 @@ class PolytopeReachableSet(ReachableSet):
     def plan_collision_free_path_in_set(self, goal_state):
         #fixme: correct cost function
         if not self.contains(goal_state):
-            return np.linalg.norm(self.parent_state-goal_state), None
-        return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
-
-    def plan_collision_free_path_in_set_for_goal(self, goal_state):
-        #dirty workaround for fuzzy goal check
-        #does not return infinity
+            return np.linalg.norm(self.parent_state-goal_state), None #FIXME: distance function
         return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
 
 
