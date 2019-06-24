@@ -5,7 +5,7 @@ from pypolycontain.lib.AH_polytope import distance_point
 from collections import deque
 from rtree import index
 from closest_polytope.bounding_box.polytope_tree import PolytopeTree
-from closest_polytope.bounding_box.box import AH_polytope_to_box
+from closest_polytope.bounding_box.box import AH_polytope_to_box, zonotope_to_box#FIXME
 
 
 class PolytopeReachableSet(ReachableSet):
@@ -115,8 +115,8 @@ class ContinuousSystem_StateTree(StateTree):
         self.state_id_to_state[state_id] = state
 
     def state_ids_in_reachable_set(self, query_reachable_set):
-        lu = AH_polytope_to_box(query_reachable_set.polytope) #FIXME: Memoize the polytope's AABB
-        return list(self.state_idx.intersection(np.repeat(lu,2)))
+        lu = zonotope_to_box(query_reachable_set.polytope) #FIXME: change to AH polytope to box; Memoize the polytope's AABB
+        return list(self.state_idx.intersection(lu))
 
 class ContinuousSystem_RGRRTStar(RGRRTStar):
     def __init__(self, sys, sampler, step_size, contains_goal_function = None):
