@@ -1,7 +1,7 @@
 import pydrake
 from rg_rrt_star.common.rg_rrt_star import *
 from polytope_symbolic_system.common.symbolic_system import *
-from pypolycontain.lib.AH_polytope import distance_point
+from pypolycontain.lib.operations import distance_point_polytope
 from collections import deque
 from rtree import index
 from closest_polytope.bounding_box.polytope_tree import PolytopeTree
@@ -13,14 +13,14 @@ class PolytopeReachableSet(ReachableSet):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope = polytope
         self.epsilon = epsilon
-        self.parent_distance = distance_point(self.polytope, self.parent_state)[0]
+        self.parent_distance = distance_point_polytope(self.polytope, self.parent_state)[0]
         self.contains_goal_function = contains_goal_function
         # assert(self.parent_distance<self.epsilon)
 
     def contains(self, goal_state):
         # print(distance_point(self.polytope, goal_state)[0])
         # print(self.polytope)
-        if distance_point(self.polytope, goal_state)[0] < self.epsilon:
+        if distance_point_polytope(self.polytope, goal_state)[0] < self.epsilon:
             return True
         return False
 
@@ -36,7 +36,7 @@ class PolytopeReachableSet(ReachableSet):
         :param query_point:
         :return: Tuple (closest_point, closest_point_is_self.state)
         '''
-        closest_point = distance_point(self.polytope, query_point)[1]
+        closest_point = distance_point_polytope(self.polytope, query_point)[1]
         closest_point = np.ndarray.flatten(closest_point)
         # print(closest_point, self.parent_state)
         return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon

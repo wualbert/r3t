@@ -4,7 +4,7 @@ from timeit import default_timer
 from polytope_symbolic_system.examples.pendulum import Pendulum
 from rg_rrt_star.continuous_system.continuous_system_rg_rrt_star import ContinuousSystem_RGRRTStar
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
-from pypolycontain.lib.AH_polytope import distance_point
+from pypolycontain.lib.operations import distance_point_polytope
 from utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
@@ -12,12 +12,13 @@ import os
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.2],[0.2]]))
+    pendulum_system = Pendulum(m = 1, m_l=0, l = 0.5, b = 0.1, g = 9.8, initial_state= initial_state, input_limits=np.asarray([[-0.1],[0.1]]))
+    # pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.1],[0.1]]))
     goal_state = np.asarray([np.pi,0.0])
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = (rnd[0]-0.5)*2.5*np.pi
-        rnd[1] = (rnd[1]-0.5)*6
+        rnd[0] = (rnd[0]-0.5)*2*3 *np.pi
+        rnd[1] = (rnd[1]-0.5)*2*20
         goal_bias = np.random.rand(1)
         if goal_bias<0.1:
             return goal_state
@@ -33,12 +34,12 @@ def test_pendulum_planning():
         return rnd
 
     def contains_goal_function(reachable_set, goal_state):
-        distance, projection = distance_point(reachable_set.polytope, goal_state)
-        if abs(projection[0]-goal_state[0])<1e-1 and abs(projection[1]-goal_state[1])<1e-1:
+        distance, projection = distance_point_polytope(reachable_set.polytope, goal_state)
+        if abs(projection[0]-goal_state[0])%(2*np.pi)<1e-1 and abs(projection[1]-goal_state[1])<1e-1:
             return True
         return False
 
-    rrt = ContinuousSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, 0.4, contains_goal_function=contains_goal_function)
+    rrt = ContinuousSystem_RGRRTStar(pendulum_system, uniform_sampler, 0.075 , contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -46,7 +47,7 @@ def test_pendulum_planning():
     os.makedirs('RRT_'+experiment_name)
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=False) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -67,7 +68,7 @@ def test_pendulum_planning():
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
         ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
         ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
-        ax.set_aspect('equal')
+        # ax.set_aspect('equal')
         plt.xlabel('$x$')
         plt.ylabel('$\dot{x}$')
         duration += (end_time-start_time)
