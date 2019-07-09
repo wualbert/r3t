@@ -1,3 +1,0 @@
-[submodule "bounding_box_closest_polytope"]
-	path = bounding_box_closest_polytope
-	url = git@github.com:wualbert/bounding_box_closest_polytope.git
