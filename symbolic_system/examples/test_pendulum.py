@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.pendulum import Pendulum
-from rg_rrt_star.continuous_system.continuous_system_rg_rrt_star import ContinuousSystem_RGRRTStar
+from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from pypolycontain.lib.AH_polytope import distance_point
 from utils.visualization import visualize_node_tree_2D
@@ -33,12 +33,12 @@ def test_pendulum_planning():
         return rnd
 
     def contains_goal_function(reachable_set, goal_state):
-        distance, projection = distance_point(reachable_set.polytope, goal_state)
+        distance, projection = distance_point(reachable_set.polytope_list, goal_state)
         if abs(projection[0]-goal_state[0])<1e-1 and abs(projection[1]-goal_state[1])<1e-1:
             return True
         return False
 
-    rrt = ContinuousSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, 0.4, contains_goal_function=contains_goal_function)
+    rrt = SymbolicSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, 0.4, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -54,7 +54,7 @@ def test_pendulum_planning():
         reachable_polytopes = []
         explored_states = []
         for prs in polytope_reachable_sets:
-            reachable_polytopes.append(prs.polytope)
+            reachable_polytopes.append(prs.polytope_list)
             explored_states.append(prs.parent_state)
         # print(explored_states)
         # print(len(explored_states))

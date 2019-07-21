@@ -9,20 +9,27 @@ from closest_polytope.bounding_box.box import AH_polytope_to_box, zonotope_to_bo
 
 
 class PolytopeReachableSet(ReachableSet):
-    def __init__(self, parent_state, polytope, epsilon=1e-3, contains_goal_function = None):
+    def __init__(self, parent_state, polytope_list, epsilon=1e-3, contains_goal_function = None):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
-        self.polytope = polytope
+        self.polytope_list = polytope_list
         self.epsilon = epsilon
-        self.parent_distance = distance_point(self.polytope, self.parent_state)[0]
+        self.parent_distance = distance_point(self.polytope_list, self.parent_state)[0]
         self.contains_goal_function = contains_goal_function
         # assert(self.parent_distance<self.epsilon)
 
     def contains(self, goal_state):
         # print(distance_point(self.polytope, goal_state)[0])
         # print(self.polytope)
-        if distance_point(self.polytope, goal_state)[0] < self.epsilon:
-            return True
-        return False
+        try:
+            #multimodal
+            for polytope in self.polytope_list:
+                if distance_point(polytope, goal_state)[0] < self.epsilon:
+                    return True
+                return False
+        except TypeError:
+            if distance_point(self.polytope_list, goal_state)[0] < self.epsilon:
+                return True
+            return False
 
     def contains_goal(self, goal_state):
         if self.contains_goal is None:
@@ -36,7 +43,7 @@ class PolytopeReachableSet(ReachableSet):
         :param query_point:
         :return: Tuple (closest_point, closest_point_is_self.state)
         '''
-        closest_point = distance_point(self.polytope, query_point)[1]
+        closest_point = distance_point(self.polytope_list, query_point)[1]
         closest_point = np.ndarray.flatten(closest_point)
         # print(closest_point, self.parent_state)
         return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
@@ -70,15 +77,29 @@ class PolytopeReachableSetTree(ReachableSetTree):
         # self.state_idx = None
         # self.state_tree_p = index.Property()
 
-    def insert(self, id, reachable_set):
-        if self.polytope_tree is None:
-            self.polytope_tree = PolytopeTree(np.array([reachable_set.polytope]), key_vertex_count=self.key_vertex_count)
-            # for d_neighbor_ids
-            # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
-        else:
-            self.polytope_tree.insert(np.array([reachable_set.polytope]))
-        self.id_to_reachable_sets[id] = reachable_set
-        self.polytope_to_id[reachable_set.polytope] = id
+    def insert(self, state_id, reachable_set):
+        try:
+            iter(reachable_set.polytope_list)
+            if self.polytope_tree is None:
+                self.polytope_tree = PolytopeTree(np.array(reachable_set.polytope_list),
+                                                  key_vertex_count=self.key_vertex_count)
+                # for d_neighbor_ids
+                # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
+            else:
+                self.polytope_tree.insert(np.array(reachable_set.polytope_list))
+            self.id_to_reachable_sets[state_id] = reachable_set
+            for p in reachable_set.polytope_list:
+                self.polytope_to_id[p] = state_id
+
+        except TypeError:
+            if self.polytope_tree is None:
+                self.polytope_tree = PolytopeTree(np.array([reachable_set.polytope_list]), key_vertex_count=self.key_vertex_count)
+                # for d_neighbor_ids
+                # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
+            else:
+                self.polytope_tree.insert(np.array([reachable_set.polytope_list]))
+            self.id_to_reachable_sets[state_id] = reachable_set
+            self.polytope_to_id[reachable_set.polytope_list] = state_id
         # for d_neighbor_ids
         # state_id = hash(str(reachable_set.parent_state))
         # self.state_idx.insert(state_id, np.repeat(reachable_set.parent_state, 2))
@@ -103,7 +124,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
         # return self.state_idx.intersection(, objects=False)
         raise NotImplementedError
 
-class ContinuousSystem_StateTree(StateTree):
+class SymbolicSystem_StateTree(StateTree):
     def __init__(self):
         StateTree.__init__(self)
         self.state_id_to_state = {}
@@ -115,10 +136,10 @@ class ContinuousSystem_StateTree(StateTree):
         self.state_id_to_state[state_id] = state
 
     def state_ids_in_reachable_set(self, query_reachable_set):
-        lu = zonotope_to_box(query_reachable_set.polytope) #FIXME: change to AH polytope to box; Memoize the polytope's AABB
+        lu = zonotope_to_box(query_reachable_set.polytope_list) #FIXME: change to AH polytope to box; Memoize the polytope's AABB
         return list(self.state_idx.intersection(lu))
 
-class ContinuousSystem_RGRRTStar(RGRRTStar):
+class SymbolicSystem_RGRRTStar(RGRRTStar):
     def __init__(self, sys, sampler, step_size, contains_goal_function = None):
         self.sys = sys
         self.step_size = step_size
@@ -129,6 +150,6 @@ class ContinuousSystem_RGRRTStar(RGRRTStar):
             :param h:
             :return:
             '''
-            reachable_set_polytope = self.sys.get_reachable_zonotope(state, step_size=self.step_size)
+            reachable_set_polytope = self.sys.get_reachable_zonotopes(state, step_size=self.step_size)
             return PolytopeReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function)
-        RGRRTStar.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, ContinuousSystem_StateTree, PolytopePath)
+        RGRRTStar.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)
