@@ -5,34 +5,57 @@ from pypolycontain.lib.AH_polytope import distance_point
 from collections import deque
 from rtree import index
 from closest_polytope.bounding_box.polytope_tree import PolytopeTree
-from closest_polytope.bounding_box.box import AH_polytope_to_box, zonotope_to_box#FIXME
+from closest_polytope.bounding_box.box import AH_polytope_to_box, zonotope_to_box, \
+    point_to_box_dmax, point_to_box_distance#FIXME
 
 
 class PolytopeReachableSet(ReachableSet):
     def __init__(self, parent_state, polytope_list, epsilon=1e-3, contains_goal_function = None):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
-        self.epsilon = epsilon
         try:
-            self.parent_distance = min([distance_point(p, self.parent_state)[0] for p in self.polytope_list])
+            self.aabb_list = [zonotope_to_box(p, return_AABB=True) for p in self.polytope_list]
         except TypeError:
-            self.parent_distance = distance_point(self.polytope_list, self.parent_state)[0]
+            self.aabb_list = None
+        self.epsilon = epsilon
+        # try:
+        #     self.parent_distance = min([distance_point(p, self.parent_state)[0] for p in self.polytope_list])
+        # except TypeError:
+        #     self.parent_distance = distance_point(self.polytope_list, self.parent_state)[0]
 
         self.contains_goal_function = contains_goal_function
         # assert(self.parent_distance<self.epsilon)
 
-    def contains(self, goal_state):
+    def contains(self, goal_state, return_closest_state = True):
         # print(distance_point(self.polytope, goal_state)[0])
         # print(self.polytope)
         try:
             #multimodal
-            for polytope in self.polytope_list:
-                if distance_point(polytope, goal_state)[0] < self.epsilon:
-                    return True
-            return False
+            distance = np.inf
+            closest_state = None
+            for i, polytope in enumerate(self.polytope_list):
+                # if point_to_box_distance(goal_state, self.aabb_list[i])>0:
+                #     continue
+                current_distance, current_closest_state = distance_point(polytope, goal_state)
+                if current_distance < self.epsilon:
+                    if return_closest_state:
+                        return True, goal_state
+                    else:
+                        return True
+                else:
+                    if current_distance < distance:
+                        distance = current_distance
+                        closest_state = current_closest_state
+            return False, closest_state
         except TypeError:
-            if distance_point(self.polytope_list, goal_state)[0] < self.epsilon:
-                return True
+            distance, closest_state = distance_point(self.polytope_list, goal_state)
+            if distance < self.epsilon:
+                if return_closest_state:
+                    return True, closest_state
+                else:
+                    return True
+            if return_closest_state:
+                return False, closest_state
             return False
 
     def contains_goal(self, goal_state):
@@ -50,11 +73,21 @@ class PolytopeReachableSet(ReachableSet):
         distance = np.inf
         closest_point = None
         try:
-            for p in self.polytope_list:
+            #use AABB to upper bound distance
+            min_dmax = np.inf
+            for i, aabb in enumerate(self.aabb_list):
+                dmax = point_to_box_dmax(query_point, aabb)
+                if dmax < min_dmax:
+                    min_dmax = dmax
+
+            for i, p in enumerate(self.polytope_list):
+                #ignore polytopes that are impossible
+                if point_to_box_distance(query_point, self.aabb_list[i]) > min_dmax:
+                    continue
                 d, proj = distance_point(p, query_point)
                 if d<distance:
                     distance = d
-                    closest_point = distance_point(p, query_point)[1]
+                    closest_point = proj
             assert closest_point is not None
         except TypeError:
             closest_point = distance_point(self.polytope_list, query_point)[1]
@@ -63,8 +96,10 @@ class PolytopeReachableSet(ReachableSet):
 
     def plan_collision_free_path_in_set(self, goal_state):
         #fixme: correct cost function
-        if not self.contains(goal_state):
-            return np.linalg.norm(self.parent_state-goal_state), None #FIXME: distance function
+        #fixme: support collision checking
+        is_contain, closest_state = self.contains(goal_state)
+        if not is_contain:
+            return np.linalg.norm(self.parent_state-closest_state), deque([self.parent_state, closest_state]) #FIXME: distance function
         return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
 
 

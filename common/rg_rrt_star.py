@@ -302,18 +302,18 @@ class RGRRTStar:
                 if not discard:
                     break
             if discard:  # No state in the reachable set is better the the nearest state
+                print('Warning: discarding state')
                 continue
-            # #sanity check to prevent numerical errors
-            # if not nearest_node.reachable_set.contains(new_state):
-            #     continue
+            new_state_id = hash(str(new_state))
+            #add the new node to the set tree if the new node is not already in the tree
+            if new_state_id in self.state_to_node_map:
+                continue            # #sanity check to prevent numerical errors
+
             is_extended, new_node = self.extend(new_state, nearest_node)
             if not is_extended: #extension failed
+                print('Warning: extension failed')
                 continue
 
-            #add the new node to the set tree if the new node is not already in the tree
-            new_state_id = hash(str(new_node.state))
-            if new_state_id in self.state_to_node_map:
-                continue
             self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
             self.state_tree.insert(new_state_id, new_node.state)
             try:

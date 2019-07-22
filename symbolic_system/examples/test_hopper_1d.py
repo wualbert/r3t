@@ -15,14 +15,14 @@ def test_hopper_planning():
     l = 1
     p = 0.1
     step_size = 0.05
-    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=10)
+    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=5)
     goal_state = np.asarray([3,0.0])
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = rnd[0]*8
         rnd[1] = (rnd[1]-0.5)*2*5
         goal_bias = np.random.rand(1)
-        if goal_bias<0.1:
+        if goal_bias<0.25:
             return goal_state
         return rnd
 
@@ -36,11 +36,11 @@ def test_hopper_planning():
         return rnd
 
     def action_space_mixture_sampler():
-        action_space_ratio = 0.03
+        action_space_ratio = 0.02
         if np.random.rand(1) < action_space_ratio:
             rnd = np.random.rand(2)
             rnd[0] = rnd[0]*p*1.2+l
-            rnd[1] = (rnd[1]-0.5)*2*2
+            rnd[1] = (rnd[1]-0.5)*2*4
             return rnd
         else:
             rnd = np.random.rand(2)
@@ -48,7 +48,9 @@ def test_hopper_planning():
             rnd[1] = (rnd[1] - 0.5) * 2 * 2
             goal_bias = np.random.rand(1)
             if goal_bias < 0.2:
-                return goal_state
+                rnd[0] = np.random.normal(goal_state[0],0.5)
+                rnd[1] = np.random.normal(goal_state[1],0.5)
+                return rnd
             return rnd
 
     def contains_goal_function(reachable_set, goal_state):
@@ -57,8 +59,9 @@ def test_hopper_planning():
         for p in reachable_set.polytope_list:
             d, proj = distance_point(p, goal_state)
             if d<distance:
-                distance, projection = d, proj
-        if abs(projection[0]-goal_state[0])<1e-2 and abs(projection[1]-goal_state[1])<1e-2:
+                projection = proj
+                distance = d
+        if abs(projection[0]-goal_state[0])<1e-1 and abs(projection[1]-goal_state[1])<5e-2:
             return True
         return False
 
@@ -68,9 +71,10 @@ def test_hopper_planning():
 
     duration = 0
     os.makedirs('RRT_Hopper_1d_'+experiment_name)
-    while(1):
+    max_iterations = 5
+    for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=False) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
