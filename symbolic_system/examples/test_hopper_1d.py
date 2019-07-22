@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer
-from polytope_symbolic_system.examples.pendulum import Pendulum
+from polytope_symbolic_system.examples.hopper_1d import Hopper_1d
 from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from pypolycontain.lib.AH_polytope import distance_point
@@ -10,14 +10,16 @@ import time
 from datetime import datetime
 import os
 
-def test_pendulum_planning():
-    initial_state = np.zeros(2)
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.2],[0.2]]))
-    goal_state = np.asarray([np.pi,0.0])
+def test_hopper_planning():
+    initial_state = np.asarray([2.,0.])
+    l = 1
+    p = 0.1
+    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=10)
+    goal_state = np.asarray([3,0.0])
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = (rnd[0]-0.5)*2.5*np.pi
-        rnd[1] = (rnd[1]-0.5)*6
+        rnd[0] = rnd[0]*5
+        rnd[1] = (rnd[1]-0.5)*5
         goal_bias = np.random.rand(1)
         if goal_bias<0.1:
             return goal_state
@@ -33,17 +35,22 @@ def test_pendulum_planning():
         return rnd
 
     def contains_goal_function(reachable_set, goal_state):
-        distance, projection = distance_point(reachable_set.polytope_list, goal_state)
+        distance = np.inf
+        projection = None
+        for p in reachable_set.polytope_list:
+            d, proj = distance_point(p, goal_state)
+            if d<distance:
+                distance, projection = d, proj
         if abs(projection[0]-goal_state[0])<1e-1 and abs(projection[1]-goal_state[1])<1e-1:
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, 0.4, contains_goal_function=contains_goal_function)
+    rrt = SymbolicSystem_RGRRTStar(hopper_system, uniform_sampler, 0.05, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
     duration = 0
-    os.makedirs('RRT_Pendulum_'+experiment_name)
+    os.makedirs('RRT_Hopper_1d_'+experiment_name)
     while(1):
         start_time = time.time()
         if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=True) is not None:
@@ -54,7 +61,7 @@ def test_pendulum_planning():
         reachable_polytopes = []
         explored_states = []
         for prs in polytope_reachable_sets:
-            reachable_polytopes.append(prs.polytope_list)
+            reachable_polytopes.extend(prs.polytope_list)
             explored_states.append(prs.parent_state)
         # print(explored_states)
         # print(len(explored_states))
@@ -67,12 +74,16 @@ def test_pendulum_planning():
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
         ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
         ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
-        ax.set_aspect('equal')
+        # ax.set_aspect('equal')
+        plt.plot([l-p, l-p], [-2.5, 2.5], 'm:', lw=1.5)
+        plt.plot([l, l], [-2.5, 2.5], 'b:', lw=1.5)
+
+        ax.set_xlim(left=0)
         plt.xlabel('$x$')
         plt.ylabel('$\dot{x}$')
         duration += (end_time-start_time)
         plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
-        plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
+        plt.savefig('RRT_Hopper_1d_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
         # plt.show()
         plt.clf()
         plt.close()
@@ -81,4 +92,4 @@ def test_pendulum_planning():
 
 
 if __name__=='__main__':
-    test_pendulum_planning()
+    test_hopper_planning()

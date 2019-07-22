@@ -13,7 +13,11 @@ class PolytopeReachableSet(ReachableSet):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
         self.epsilon = epsilon
-        self.parent_distance = distance_point(self.polytope_list, self.parent_state)[0]
+        try:
+            self.parent_distance = min([distance_point(p, self.parent_state)[0] for p in self.polytope_list])
+        except TypeError:
+            self.parent_distance = distance_point(self.polytope_list, self.parent_state)[0]
+
         self.contains_goal_function = contains_goal_function
         # assert(self.parent_distance<self.epsilon)
 
@@ -25,7 +29,7 @@ class PolytopeReachableSet(ReachableSet):
             for polytope in self.polytope_list:
                 if distance_point(polytope, goal_state)[0] < self.epsilon:
                     return True
-                return False
+            return False
         except TypeError:
             if distance_point(self.polytope_list, goal_state)[0] < self.epsilon:
                 return True
@@ -43,9 +47,18 @@ class PolytopeReachableSet(ReachableSet):
         :param query_point:
         :return: Tuple (closest_point, closest_point_is_self.state)
         '''
-        closest_point = distance_point(self.polytope_list, query_point)[1]
+        distance = np.inf
+        closest_point = None
+        try:
+            for p in self.polytope_list:
+                d, proj = distance_point(p, query_point)
+                if d<distance:
+                    distance = d
+                    closest_point = distance_point(p, query_point)[1]
+            assert closest_point is not None
+        except TypeError:
+            closest_point = distance_point(self.polytope_list, query_point)[1]
         closest_point = np.ndarray.flatten(closest_point)
-        # print(closest_point, self.parent_state)
         return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
 
     def plan_collision_free_path_in_set(self, goal_state):
@@ -136,8 +149,15 @@ class SymbolicSystem_StateTree(StateTree):
         self.state_id_to_state[state_id] = state
 
     def state_ids_in_reachable_set(self, query_reachable_set):
-        lu = zonotope_to_box(query_reachable_set.polytope_list) #FIXME: change to AH polytope to box; Memoize the polytope's AABB
-        return list(self.state_idx.intersection(lu))
+        try:
+            state_ids_list = []
+            for p in query_reachable_set.polytope_list:
+                lu = zonotope_to_box(p) #FIXME: change to AH polytope to box; Memoize the polytope's AABB
+                state_ids_list.extend(list(self.state_idx.intersection(lu)))
+            return state_ids_list
+        except TypeError:
+            lu = zonotope_to_box(query_reachable_set.polytope_list)
+            return list(self.state_idx.intersection(lu))
 
 class SymbolicSystem_RGRRTStar(RGRRTStar):
     def __init__(self, sys, sampler, step_size, contains_goal_function = None):
