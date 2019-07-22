@@ -14,6 +14,7 @@ def test_hopper_planning():
     initial_state = np.asarray([2.,0.])
     l = 1
     p = 0.1
+    step_size = 0.025
     hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=10)
     goal_state = np.asarray([3,0.0])
     def uniform_sampler():
@@ -45,7 +46,7 @@ def test_hopper_planning():
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(hopper_system, uniform_sampler, 0.05, contains_goal_function=contains_goal_function)
+    rrt = SymbolicSystem_RGRRTStar(hopper_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -75,8 +76,8 @@ def test_hopper_planning():
         ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
         ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
         # ax.set_aspect('equal')
-        plt.plot([l-p, l-p], [-2.5, 2.5], 'm:', lw=1.5)
-        plt.plot([l, l], [-2.5, 2.5], 'b:', lw=1.5)
+        plt.plot([l+p, l+p], [-2.5, 2.5], 'm--', lw=1.5)
+        plt.plot([l, l], [-2.5, 2.5], 'b--', lw=1.5)
 
         ax.set_xlim(left=0)
         plt.xlabel('$x$')
