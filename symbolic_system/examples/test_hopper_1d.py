@@ -14,13 +14,13 @@ def test_hopper_planning():
     initial_state = np.asarray([2.,0.])
     l = 1
     p = 0.1
-    step_size = 0.025
+    step_size = 0.05
     hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=10)
     goal_state = np.asarray([3,0.0])
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = rnd[0]*5
-        rnd[1] = (rnd[1]-0.5)*5
+        rnd[0] = rnd[0]*8
+        rnd[1] = (rnd[1]-0.5)*2*5
         goal_bias = np.random.rand(1)
         if goal_bias<0.1:
             return goal_state
@@ -29,11 +29,27 @@ def test_hopper_planning():
     def gaussian_mixture_sampler():
         gaussian_ratio = 0.4
         rnd = np.random.rand(2)
-        rnd[0] = np.random.normal(goal_state[0],1)
-        rnd[1] = np.random.normal(goal_state[1],1)
+        rnd[0] = np.random.normal(l+0.5*p,2*p)
+        rnd[1] = (np.random.rand(1)-0.5)*2*4
         if np.random.rand(1) > gaussian_ratio:
             return uniform_sampler()
         return rnd
+
+    def action_space_mixture_sampler():
+        action_space_ratio = 0.03
+        if np.random.rand(1) < action_space_ratio:
+            rnd = np.random.rand(2)
+            rnd[0] = rnd[0]*p*1.2+l
+            rnd[1] = (rnd[1]-0.5)*2*2
+            return rnd
+        else:
+            rnd = np.random.rand(2)
+            rnd[0] = rnd[0]*4 + l
+            rnd[1] = (rnd[1] - 0.5) * 2 * 2
+            goal_bias = np.random.rand(1)
+            if goal_bias < 0.2:
+                return goal_state
+            return rnd
 
     def contains_goal_function(reachable_set, goal_state):
         distance = np.inf
@@ -42,11 +58,11 @@ def test_hopper_planning():
             d, proj = distance_point(p, goal_state)
             if d<distance:
                 distance, projection = d, proj
-        if abs(projection[0]-goal_state[0])<1e-1 and abs(projection[1]-goal_state[1])<1e-1:
+        if abs(projection[0]-goal_state[0])<1e-2 and abs(projection[1]-goal_state[1])<1e-2:
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(hopper_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = SymbolicSystem_RGRRTStar(hopper_system, action_space_mixture_sampler, step_size, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -69,7 +85,7 @@ def test_hopper_planning():
         # print('number of nodes',rrt.node_tally)
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15)
+        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
         # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
@@ -79,7 +95,7 @@ def test_hopper_planning():
         plt.plot([l+p, l+p], [-2.5, 2.5], 'm--', lw=1.5)
         plt.plot([l, l], [-2.5, 2.5], 'b--', lw=1.5)
 
-        ax.set_xlim(left=0)
+        # ax.set_xlim(left=0)
         plt.xlabel('$x$')
         plt.ylabel('$\dot{x}$')
         duration += (end_time-start_time)
