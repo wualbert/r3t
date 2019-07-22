@@ -1,7 +1,8 @@
 import pydrake
 from rg_rrt_star.common.rg_rrt_star import *
 from polytope_symbolic_system.common.symbolic_system import *
-from pypolycontain.lib.AH_polytope import distance_point
+# from pypolycontain.lib.AH_polytope import distance_point
+from pypolycontain.lib.operations import distance_point_polytope as distance_point
 from collections import deque
 from rtree import index
 from closest_polytope.bounding_box.polytope_tree import PolytopeTree
@@ -95,11 +96,13 @@ class PolytopeReachableSet(ReachableSet):
         return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
 
     def plan_collision_free_path_in_set(self, goal_state):
-        #fixme: correct cost function
         #fixme: support collision checking
-        is_contain, closest_state = self.contains(goal_state)
-        if not is_contain:
-            return np.linalg.norm(self.parent_state-closest_state), deque([self.parent_state, closest_state]) #FIXME: distance function
+
+        #
+        # is_contain, closest_state = self.contains(goal_state)
+        # if not is_contain:
+        #     print('Warning: this should never happen')
+        #     return np.linalg.norm(self.parent_state-closest_state), deque([self.parent_state, closest_state]) #FIXME: distance function
         return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
 
 
