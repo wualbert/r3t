@@ -15,11 +15,12 @@ def test_hopper_planning():
     l = 1
     p = 0.1
     step_size = 0.05
-    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=5)
+    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=4)
     goal_state = np.asarray([3,0.0])
+    goal_tolerance = [2.5e-2,2.5e-2]
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = rnd[0]*8
+        rnd[0] = rnd[0]*2
         rnd[1] = (rnd[1]-0.5)*2*5
         goal_bias = np.random.rand(1)
         if goal_bias<0.25:
@@ -36,20 +37,20 @@ def test_hopper_planning():
         return rnd
 
     def action_space_mixture_sampler():
-        action_space_ratio = 0.02
+        action_space_ratio = 0.08
         if np.random.rand(1) < action_space_ratio:
             rnd = np.random.rand(2)
             rnd[0] = rnd[0]*p*1.2+l
-            rnd[1] = (rnd[1]-0.5)*2*4
+            rnd[1] = (rnd[1]-0.5)*2*8
             return rnd
         else:
             rnd = np.random.rand(2)
             rnd[0] = rnd[0]*4 + l
             rnd[1] = (rnd[1] - 0.5) * 2 * 2
             goal_bias = np.random.rand(1)
-            if goal_bias < 0.2:
-                rnd[0] = np.random.normal(goal_state[0],0.5)
-                rnd[1] = np.random.normal(goal_state[1],0.5)
+            if goal_bias < 0.35:
+                rnd[0] = np.random.normal(goal_state[0],1.5)
+                rnd[1] = np.random.normal(goal_state[1],1.5)
                 return rnd
             return rnd
 
@@ -61,20 +62,20 @@ def test_hopper_planning():
             if d<distance:
                 projection = proj
                 distance = d
-        if abs(projection[0]-goal_state[0])<1e-1 and abs(projection[1]-goal_state[1])<5e-2:
+        if abs(projection[0]-goal_state[0])<goal_tolerance[0] and abs(projection[1]-goal_state[1])<goal_tolerance[1]:
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(hopper_system, action_space_mixture_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = SymbolicSystem_RGRRTStar(hopper_system, gaussian_mixture_sampler, step_size, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
     duration = 0
     os.makedirs('RRT_Hopper_1d_'+experiment_name)
-    max_iterations = 5
+    max_iterations = 100
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes

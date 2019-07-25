@@ -54,7 +54,7 @@ class ReachableSet:
         '''
         return self.contains(goal_state)
 
-    def plan_collision_free_path_in_set(self, goal_state):
+    def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state=False):
         '''
         Plans a path between self.state and goal_state. Goals state must be in this reachable set
         :param state:
@@ -243,21 +243,27 @@ class RGRRTStar:
         parent_node.children.add(new_node)
         return new_node
 
-    def extend(self, new_state, nearest_node):
+    def extend(self, new_state, nearest_node, explore_deterministic_next_state=False):
         # check for obstacles
-        cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
+        if explore_deterministic_next_state:
+            cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state,
+                                                                                          return_deterministic_next_state=True)
+        else:
+            cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
         #FIXME: Support for partial extensions
         if path is None:
             return False, None
         new_node = self.create_child_node(nearest_node, new_state, cost_to_go, path)
         return True, new_node
 
-    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False):
+    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = False, max_nodes_to_add = int(1e9)):
         '''
         Builds a RG-RRT* Tree to solve for the path to a goal.
         :param goal_state:  The goal for the planner.
         :param allocated_time: Time allowed (in seconds) for the planner to run. If time runs out before the planner finds a path, the code will be terminated.
         :param stop_on_first_reach: Whether the planner should continue improving on the solution if it finds a path to goal before time runs out.
+        :param rewire: Whether to do RRT*
+        :param explore_deterministic_next_state: perform depth-first exploration (no sampling, just build node tree) when the reachable set is a point
         :return: The goal node as a Node object. If no path is found, None is returned. self.goal_node is set to the return value after running.
         '''
         #TODO: Timeout and other termination functionalities
@@ -290,56 +296,114 @@ class RGRRTStar:
                     return self.goal_node
 
             #sample the state space
-            random_sample = self.sampler()
-            # map the states to nodes
-            nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1))  # FIXME: necessary to cast to list?
-            discard = True
-            for i, nearest_state_id in enumerate(nearest_state_id_list):
-                nearest_node = self.state_to_node_map[nearest_state_id]
-                # find the closest state in the reachable set and use it to extend the tree
-                new_state, discard = nearest_node.reachable_set.find_closest_state(random_sample)
-                # print(new_state,discard)
-                if not discard:
-                    break
-            if discard:  # No state in the reachable set is better the the nearest state
-                print('Warning: discarding state')
-                continue
-            new_state_id = hash(str(new_state))
-            #add the new node to the set tree if the new node is not already in the tree
-            if new_state_id in self.state_to_node_map:
-                continue            # #sanity check to prevent numerical errors
+            sample_is_valid = False
+            sample_count = 0
+            while not sample_is_valid:
+                random_sample = self.sampler()
+                sample_count+=1
+                # map the states to nodes
+                nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1))  # FIXME: necessary to cast to list?
+                discard = True
 
-            is_extended, new_node = self.extend(new_state, nearest_node)
-            if not is_extended: #extension failed
-                print('Warning: extension failed')
-                continue
-
-            self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
-            self.state_tree.insert(new_state_id, new_node.state)
-            try:
-                assert(new_state_id not in self.state_to_node_map)
-            except:
-                print('State id hash collision!')
-                print('Original state is ', self.state_to_node_map[new_state_id].state)
-                print('Attempting to insert', new_node.state)
-                raise AssertionError
-            self.state_to_node_map[new_state_id] = new_node
-            self.node_tally = len(self.state_to_node_map)
-            #rewire the tree
-            if rewire:
-                self.rewire(new_node)
-            #In "find path" mode, if the goal is in the reachable set, we are done
-            if new_node.reachable_set.contains_goal(goal_state): #FIXME: support for goal region
-                # check for obstacles
-                cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
-                #allow for fuzzy goal check
-                # if cost_to_go == np.inf:
-                #     continue
-                # add the goal node to the tree
-                goal_node = self.create_child_node(new_node, goal_state)
+                for i, nearest_state_id in enumerate(nearest_state_id_list):
+                    nearest_node = self.state_to_node_map[nearest_state_id]
+                    # find the closest state in the reachable set and use it to extend the tree
+                    new_state, discard = nearest_node.reachable_set.find_closest_state(random_sample)
+                    # print(new_state,discard)
+                    new_state_id = hash(str(new_state))
+                    # add the new node to the set tree if the new node is not already in the tree
+                    if new_state_id in self.state_to_node_map:
+                        # FIXME: how to prevent repeated state exploration?
+                        # print('Warning: state already explored')
+                        discard = True
+                        continue  # #sanity check to prevent numerical errors
+                    if not discard:
+                        break
+                if discard:  # No state in the reachable set is better the the nearest state
+                    # print('Warning: discarding state')
+                    # TODO: better sampling method to grow tree, especially when no actuation is avaiable
+                    continue
+                else:
+                    sample_is_valid = True
+                #FIXME: potential infinite loop
+            # print(sample_count)
+            if not explore_deterministic_next_state:
+                is_extended, new_node = self.extend(new_state, nearest_node)
+                if not is_extended: #extension failed
+                    print('Warning: extension failed')
+                    continue
+                self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
+                self.state_tree.insert(new_state_id, new_node.state)
+                try:
+                    assert(new_state_id not in self.state_to_node_map)
+                except:
+                    print('State id hash collision!')
+                    print('Original state is ', self.state_to_node_map[new_state_id].state)
+                    print('Attempting to insert', new_node.state)
+                    raise AssertionError
+                self.state_to_node_map[new_state_id] = new_node
+                self.node_tally = len(self.state_to_node_map)
+                #rewire the tree
                 if rewire:
-                    self.rewire(goal_node)
-                self.goal_node=goal_node
+                    self.rewire(new_node)
+                #In "find path" mode, if the goal is in the reachable set, we are done
+                if new_node.reachable_set.contains_goal(goal_state): #FIXME: support for goal region
+                    # check for obstacles
+                    cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
+                    #allow for fuzzy goal check
+                    # if cost_to_go == np.inf:
+                    #     continue
+                    # add the goal node to the tree
+                    goal_node = self.create_child_node(new_node, goal_state)
+                    if rewire:
+                        self.rewire(goal_node)
+                    self.goal_node=goal_node
+            else:
+                is_extended, new_node = self.extend(new_state, nearest_node)
+                if not is_extended:  # extension failed
+                    print('Warning: extension failed')
+                    continue
+                nodes_to_add = [new_node]
+                iteration_count=0
+                while iteration_count<max_nodes_to_add:
+                    if new_node.reachable_set.deterministic_next_state is None:
+                        break
+                    if hash(str(new_node.reachable_set.deterministic_next_state)) in self.state_to_node_map:
+                        break
+                    is_extended, new_node = self.extend(new_node.reachable_set.deterministic_next_state, new_node)
+                    if not is_extended:  # extension failed
+                        break
+                    nodes_to_add.append(new_node)
+                    iteration_count+=1
+                # print('%d nodes to add' %len(nodes_to_add))
+                for new_node in nodes_to_add:
+                    new_state_id = hash(str(new_node.state))
+                    self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
+                    self.state_tree.insert(new_state_id, new_node.state)
+                    try:
+                        assert(new_state_id not in self.state_to_node_map)
+                    except:
+                        print('State id hash collision!')
+                        print('Original state is ', self.state_to_node_map[new_state_id].state)
+                        print('Attempting to insert', new_node.state)
+                        raise AssertionError
+                    self.state_to_node_map[new_state_id] = new_node
+                    self.node_tally = len(self.state_to_node_map)
+                    #rewire the tree
+                    if rewire:
+                        self.rewire(new_node)
+                    #In "find path" mode, if the goal is in the reachable set, we are done
+                    if new_node.reachable_set.contains_goal(goal_state): #FIXME: support for goal region
+                        # check for obstacles
+                        cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
+                        #allow for fuzzy goal check
+                        # if cost_to_go == np.inf:
+                        #     continue
+                        # add the goal node to the tree
+                        goal_node = self.create_child_node(new_node, goal_state)
+                        if rewire:
+                            self.rewire(goal_node)
+                        self.goal_node=goal_node
 
 
     def rewire(self, new_node):

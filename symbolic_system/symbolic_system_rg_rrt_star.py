@@ -11,7 +11,7 @@ from closest_polytope.bounding_box.box import AH_polytope_to_box, zonotope_to_bo
 
 
 class PolytopeReachableSet(ReachableSet):
-    def __init__(self, parent_state, polytope_list, epsilon=1e-3, contains_goal_function = None):
+    def __init__(self, parent_state, polytope_list, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
         try:
@@ -19,6 +19,7 @@ class PolytopeReachableSet(ReachableSet):
         except TypeError:
             self.aabb_list = None
         self.epsilon = epsilon
+        self.deterministic_next_state = deterministic_next_state
         # try:
         #     self.parent_distance = min([distance_point(p, self.parent_state)[0] for p in self.polytope_list])
         # except TypeError:
@@ -95,7 +96,7 @@ class PolytopeReachableSet(ReachableSet):
         closest_point = np.ndarray.flatten(closest_point)
         return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
 
-    def plan_collision_free_path_in_set(self, goal_state):
+    def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
         #fixme: support collision checking
 
         #
@@ -103,8 +104,11 @@ class PolytopeReachableSet(ReachableSet):
         # if not is_contain:
         #     print('Warning: this should never happen')
         #     return np.linalg.norm(self.parent_state-closest_state), deque([self.parent_state, closest_state]) #FIXME: distance function
-        return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
 
+        # Simulate forward dynamics if there can only be one state in the next timestep
+        if not return_deterministic_next_state:
+            return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
+        return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state]), self.deterministic_next_state
 
 class PolytopePath:
     def __init__(self):
@@ -162,6 +166,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
         else:
             if self.polytope_tree is None:
                 return None
+            assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
             best_polytope = self.polytope_tree.find_closest_polytopes(query_state)[0]
             return [self.polytope_to_id[best_polytope]]
 
@@ -208,6 +213,9 @@ class SymbolicSystem_RGRRTStar(RGRRTStar):
             :param h:
             :return:
             '''
+            deterministic_next_state = None
             reachable_set_polytope = self.sys.get_reachable_zonotopes(state, step_size=self.step_size)
-            return PolytopeReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function)
+            if np.all(self.sys.get_linearization(state=state).B == 0):
+                deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
+            return PolytopeReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
         RGRRTStar.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)
