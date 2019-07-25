@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import collections as mc
 import numpy as np
 
-def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25):
+def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_path_to_goal=False):
     if fig is None or ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -20,6 +20,23 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25):
                 lines.append([np.ndarray.flatten(node.state), np.ndarray.flatten(child.state)])
         ax.scatter(*np.ndarray.flatten(node.state), c='gray', s=s)
     # print('plotted %d nodes' %i)
-    lc = mc.LineCollection(lines, linewidths=linewidths, colors='gray')
-    ax.add_collection(lc)
+    if show_path_to_goal:
+
+        goal_lines = []
+        node = rrt.goal_node
+        while node.parent is not None:
+            goal_lines.append([np.ndarray.flatten(node.state), np.ndarray.flatten(node.parent.state)])
+            node = node.parent
+        line_colors = np.full(len(lines), 'gray')
+        line_widths = np.full(len(lines), linewidths)
+        goal_line_colors = np.full(len(goal_lines), 'cyan')
+        goal_line_widths= np.full(len(goal_lines), linewidths*4)
+        lines.extend(goal_lines)
+        all_colors = np.hstack([line_colors, goal_line_colors])
+        all_widths = np.hstack([line_widths, goal_line_widths])
+        lc = mc.LineCollection(lines, linewidths=all_widths, colors=all_colors)
+        ax.add_collection(lc)
+    else:
+        lc = mc.LineCollection(lines, linewidths=linewidths, colors='gray')
+        ax.add_collection(lc)
     return fig, ax
