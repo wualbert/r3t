@@ -6,8 +6,8 @@ from pypolycontain.lib.operations import distance_point_polytope as distance_poi
 from collections import deque
 from rtree import index
 from closest_polytope.bounding_box.polytope_tree import PolytopeTree
-from closest_polytope.bounding_box.box import AH_polytope_to_box, zonotope_to_box, \
-    point_to_box_dmax, point_to_box_distance#FIXME
+from closest_polytope.bounding_box.box import AH_polytope_to_box, \
+    point_to_box_dmax, point_to_box_distance
 
 
 class PolytopeReachableSet(ReachableSet):
@@ -15,7 +15,7 @@ class PolytopeReachableSet(ReachableSet):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
         try:
-            self.aabb_list = [zonotope_to_box(p, return_AABB=True) for p in self.polytope_list]
+            self.aabb_list = [AH_polytope_to_box(p, return_AABB=True) for p in self.polytope_list]
         except TypeError:
             self.aabb_list = None
         self.epsilon = epsilon
@@ -195,11 +195,11 @@ class SymbolicSystem_StateTree(StateTree):
         try:
             state_ids_list = []
             for p in query_reachable_set.polytope_list:
-                lu = zonotope_to_box(p) #FIXME: change to AH polytope to box; Memoize the polytope's AABB
+                lu = AH_polytope_to_box(p)
                 state_ids_list.extend(list(self.state_idx.intersection(lu)))
             return state_ids_list
         except TypeError:
-            lu = zonotope_to_box(query_reachable_set.polytope_list)
+            lu = AH_polytope_to_box(query_reachable_set.polytope_list)
             return list(self.state_idx.intersection(lu))
 
 class SymbolicSystem_RGRRTStar(RGRRTStar):
@@ -214,7 +214,7 @@ class SymbolicSystem_RGRRTStar(RGRRTStar):
             :return:
             '''
             deterministic_next_state = None
-            reachable_set_polytope = self.sys.get_reachable_zonotopes(state, step_size=self.step_size)
+            reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size)
             if np.all(self.sys.get_linearization(state=state).B == 0):
                 deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
             return PolytopeReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
