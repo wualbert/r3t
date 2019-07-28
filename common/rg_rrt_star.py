@@ -256,7 +256,7 @@ class RGRRTStar:
         new_node = self.create_child_node(nearest_node, new_state, cost_to_go, path)
         return True, new_node
 
-    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = False, max_nodes_to_add = int(1e9)):
+    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = True, max_nodes_to_add = int(1e9)):
         '''
         Builds a RG-RRT* Tree to solve for the path to a goal.
         :param goal_state:  The goal for the planner.
@@ -326,7 +326,7 @@ class RGRRTStar:
                 else:
                     sample_is_valid = True
                 #FIXME: potential infinite loop
-            # print(sample_count)
+            # print('Sample count: %d' %sample_count)
             if not explore_deterministic_next_state:
                 is_extended, new_node = self.extend(new_state, nearest_node)
                 if not is_extended: #extension failed
