@@ -21,7 +21,7 @@ def test_hopper_1d_planning():
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = rnd[0]*2
-        rnd[1] = (rnd[1]-0.5)*2*5
+        rnd[1] = (rnd[1]-0.5)*4*5
         goal_bias = np.random.rand(1)
         if goal_bias<0.25:
             return goal_state
