@@ -5,7 +5,7 @@ from polytope_symbolic_system.examples.pendulum import Pendulum
 from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
 from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope
 from pypolycontain.lib.AH_polytope import distance_point
-from utils.visualization import visualize_node_tree_2D
+from rg_rrt_star.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
 import os

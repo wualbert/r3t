@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer
-from polytope_symbolic_system.examples.hopper_1d import Hopper_1d
+from polytope_symbolic_system.examples.hopper_2d import Hopper_2d
 from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from pypolycontain.lib.AH_polytope import distance_point
@@ -10,14 +10,15 @@ import time
 from datetime import datetime
 import os
 
-def test_hopper_1d_planning():
-    initial_state = np.asarray([2.,0.])
+def test_hopper_2d_planning():
+    initial_state = np.asarray([0.,0.,0.,1.,0.8,0.,0.,0.,0.,0.])
+    hopper_system = Hopper_2d(initial_state=initial_state)
     l = 1
     p = 0.1
-    step_size = 0.05
-    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=4)
-    goal_state = np.asarray([3,0.0])
-    goal_tolerance = [2.5e-2,2.5e-2]
+    # [theta1, theta2, x0, y0, w]
+    goal_state = np.asarray([0.,0.,5.,0.,0.,0.,0.,0.,0.,0.])
+    goal_tolerance = [2.5e-2,2.5e-2,2.5e-2,10,10,1,1,1,1,1]
+    step_size = 1e-2
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = rnd[0]*2
@@ -60,9 +61,9 @@ def test_hopper_1d_planning():
         for p in reachable_set.polytope_list:
             d, proj = distance_point(p, goal_state)
             if d<distance:
-                projection = proj
+                projection = np.asarray(proj)
                 distance = d
-        if abs(projection[0]-goal_state[0])<goal_tolerance[0] and abs(projection[1]-goal_state[1])<goal_tolerance[1]:
+        if np.all(abs(projection-goal_state)<goal_tolerance):
             return True
         return False
 
@@ -71,7 +72,7 @@ def test_hopper_1d_planning():
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
     duration = 0
-    os.makedirs('RRT_Hopper_1d_'+experiment_name)
+    os.makedirs('RRT_Hopper_2d_'+experiment_name)
     max_iterations = 100
     for itr in range(max_iterations):
         start_time = time.time()
@@ -114,4 +115,4 @@ def test_hopper_1d_planning():
 
 
 if __name__=='__main__':
-    test_hopper_1d_planning()
+    test_hopper_2d_planning()
