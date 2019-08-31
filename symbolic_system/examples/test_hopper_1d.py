@@ -4,7 +4,7 @@ from timeit import default_timer
 from polytope_symbolic_system.examples.hopper_1d import Hopper_1d
 from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
-from pypolycontain.lib.AH_polytope import distance_point
+from pypolycontain.lib.operations import distance_point_polytope
 from rg_rrt_star.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
@@ -15,9 +15,9 @@ def test_hopper_1d_planning():
     l = 1
     p = 0.1
     step_size = 0.05
-    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=4)
+    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=20)
     goal_state = np.asarray([3,0.0])
-    goal_tolerance = [2.5e-2,2.5e-2]
+    goal_tolerance = 1e-1
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = rnd[0]*2
@@ -57,12 +57,12 @@ def test_hopper_1d_planning():
     def contains_goal_function(reachable_set, goal_state):
         distance = np.inf
         projection = None
-        for p in reachable_set.polytope_list:
-            d, proj = distance_point(p, goal_state)
+        for i, p in enumerate(reachable_set.polytope_list):
+            d, proj = distance_point_polytope(p, goal_state)
             if d<distance:
                 projection = proj
                 distance = d
-        if abs(projection[0]-goal_state[0])<goal_tolerance[0] and abs(projection[1]-goal_state[1])<goal_tolerance[1]:
+        if distance<goal_tolerance:
             return True
         return False
 

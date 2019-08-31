@@ -4,7 +4,7 @@ from timeit import default_timer
 from polytope_symbolic_system.examples.pendulum import Pendulum
 from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
 from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope
-from pypolycontain.lib.AH_polytope import distance_point
+from pypolycontain.lib.operations import distance_point_polytope
 from rg_rrt_star.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
@@ -42,8 +42,8 @@ def test_pendulum_planning():
         return rnd
 
     def contains_goal_function(reachable_set, goal_state):
-        distance1, projection1 = distance_point(reachable_set.polytope_list, goal_state)
-        distance2, projection2 = distance_point(reachable_set.polytope_list, np.asarray([goal_state[0]-2*np.pi, goal_state[1]]))
+        distance1, projection1 = distance_point_polytope(reachable_set.polytope_list, goal_state)
+        distance2, projection2 = distance_point_polytope(reachable_set.polytope_list, np.asarray([goal_state[0]-2*np.pi, goal_state[1]]))
         # if (abs(projection1[0]-goal_state[0])%(2*np.pi)<3e-1 and abs(projection1[1]-goal_state[1])<3e-1) or \
         # (abs(projection2[0] - goal_state[0]) % (2 * np.pi) < 3e-1 and abs(projection2[1] - goal_state[1]) < 3e-1):
         #     return True
