@@ -67,18 +67,12 @@ def test_hopper_1d_planning():
                 # check if the goal is on the line
                 vec_to_goal = goal_state - reachable_set.parent_state
                 vec_to_reachable_set = np.ndarray.flatten(p.t)-reachable_set.parent_state
-                if (np.linalg.norm(reachable_set.parent_state-goal_state)<1):
-                    print(vec_to_reachable_set, vec_to_goal)
                 # normalize
                 vec_to_reachable_set_norm = np.linalg.norm(vec_to_reachable_set)
                 vec_dot = np.dot(vec_to_reachable_set, vec_to_goal)/vec_to_reachable_set_norm
                 crosstrack_vec = vec_to_goal-vec_dot*vec_to_reachable_set/vec_to_reachable_set_norm
-                if (np.linalg.norm(reachable_set.parent_state - goal_state) < 1):
-                    print(vec_dot, crosstrack_vec, vec_to_reachable_set_norm)
                 if np.linalg.norm(crosstrack_vec)<distance and 0.<=vec_dot<=vec_to_reachable_set_norm:
                     distance = np.linalg.norm(crosstrack_vec)
-                if (np.linalg.norm(reachable_set.parent_state - goal_state) < 1):
-                    print(distance)
             else:
                 d, proj = distance_point_polytope(p, goal_state)
                 if d<distance:
