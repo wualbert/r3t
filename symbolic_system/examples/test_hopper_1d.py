@@ -14,10 +14,10 @@ def test_hopper_1d_planning():
     initial_state = np.asarray([2.,0.])
     l = 1
     p = 0.1
-    step_size = 0.05
+    step_size = 0.04
     hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=20)
     goal_state = np.asarray([3,0.0])
-    goal_tolerance = 5e-2
+    goal_tolerance = 4e-2
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = rnd[0]*2
