@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import collections as mc
 import numpy as np
 
-def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_path_to_goal=False):
+def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_path_to_goal=False, goal_override=None):
     if fig is None or ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -17,13 +17,19 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_
             # print(len(node.children))
             node_queue.extend(list(node.children))
             for child in node.children:
-                lines.append([np.ndarray.flatten(node.state), np.ndarray.flatten(child.state)])
+                # don't plot the goal if goal override is on
+                if goal_override is not None and child==rrt.goal_node:
+                    lines.append([np.ndarray.flatten(node.state), goal_override])
+                else:
+                    lines.append([np.ndarray.flatten(node.state), np.ndarray.flatten(child.state)])
         ax.scatter(*np.ndarray.flatten(node.state), c='gray', s=s)
     # print('plotted %d nodes' %i)
     if show_path_to_goal:
-
         goal_lines = []
         node = rrt.goal_node
+        if goal_override is not None:
+            goal_lines.append([goal_override, np.ndarray.flatten(node.parent.state)])
+            node = node.parent
         while node.parent is not None:
             goal_lines.append([np.ndarray.flatten(node.state), np.ndarray.flatten(node.parent.state)])
             node = node.parent
