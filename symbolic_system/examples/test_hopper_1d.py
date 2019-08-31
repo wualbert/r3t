@@ -17,7 +17,7 @@ def test_hopper_1d_planning():
     step_size = 0.05
     hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=20)
     goal_state = np.asarray([3,0.0])
-    goal_tolerance = 1e-1
+    goal_tolerance = 5e-2
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = rnd[0]*2
@@ -57,12 +57,35 @@ def test_hopper_1d_planning():
     def contains_goal_function(reachable_set, goal_state):
         distance = np.inf
         projection = None
+        # reachable set is a singular point
+        # if reahc
+        #
+        # else:
         for i, p in enumerate(reachable_set.polytope_list):
-            d, proj = distance_point_polytope(p, goal_state)
-            if d<distance:
-                projection = proj
-                distance = d
+            if (p.T==0.).all():
+                # reachable set is a line
+                # check if the goal is on the line
+                vec_to_goal = goal_state - reachable_set.parent_state
+                vec_to_reachable_set = np.ndarray.flatten(p.t)-reachable_set.parent_state
+                if (np.linalg.norm(reachable_set.parent_state-goal_state)<1):
+                    print(vec_to_reachable_set, vec_to_goal)
+                # normalize
+                vec_to_reachable_set_norm = np.linalg.norm(vec_to_reachable_set)
+                vec_dot = np.dot(vec_to_reachable_set, vec_to_goal)/vec_to_reachable_set_norm
+                crosstrack_vec = vec_to_goal-vec_dot*vec_to_reachable_set/vec_to_reachable_set_norm
+                if (np.linalg.norm(reachable_set.parent_state - goal_state) < 1):
+                    print(vec_dot, crosstrack_vec, vec_to_reachable_set_norm)
+                if np.linalg.norm(crosstrack_vec)<distance and 0.<=vec_dot<=vec_to_reachable_set_norm:
+                    distance = np.linalg.norm(crosstrack_vec)
+                if (np.linalg.norm(reachable_set.parent_state - goal_state) < 1):
+                    print(distance)
+            else:
+                d, proj = distance_point_polytope(p, goal_state)
+                if d<distance:
+                    projection = proj
+                    distance = d
         if distance<goal_tolerance:
+            print(distance, goal_tolerance)
             return True
         return False
 

@@ -246,7 +246,7 @@ class RGRRTStar:
     def extend(self, new_state, nearest_node, explore_deterministic_next_state=False):
         # check for obstacles
         if explore_deterministic_next_state:
-            cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state,
+            cost_to_go, path, deterministic_next_state = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state,
                                                                                           return_deterministic_next_state=True)
         else:
             cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
@@ -359,15 +359,17 @@ class RGRRTStar:
                         self.rewire(goal_node)
                     self.goal_node=goal_node
             else:
-                is_extended, new_node = self.extend(new_state, nearest_node)
+                is_extended, new_node = self.extend(new_state, nearest_node, True)
                 if not is_extended:  # extension failed
                     print('Warning: extension failed')
                     continue
                 nodes_to_add = [new_node]
                 iteration_count=0
                 while iteration_count<max_nodes_to_add:
+                    # No longer deterministic
                     if new_node.reachable_set.deterministic_next_state is None:
                         break
+                    # Already added
                     if hash(str(new_node.reachable_set.deterministic_next_state)) in self.state_to_node_map:
                         break
                     is_extended, new_node = self.extend(new_node.reachable_set.deterministic_next_state, new_node)
