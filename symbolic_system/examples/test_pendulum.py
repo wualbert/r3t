@@ -43,16 +43,18 @@ def test_pendulum_planning():
         return rnd
 
     def contains_goal_function(reachable_set, goal_state):
-        if np.linalg.norm(reachable_set.parent_state-goal_state)<5e-1:
-            distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state)
-        elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<5e-1:
-            distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state_2)
-        # if (abs(projection1[0]-goal_state[0])%(2*np.pi)<3e-1 and abs(projection1[1]-goal_state[1])<3e-1) or \
-        # (abs(projection2[0] - goal_state[0]) % (2 * np.pi) < 3e-1 and abs(projection2[1] - goal_state[1]) < 3e-1):
-        #     return True
-        else:
-            return False
-        if distance<2e-1:
+        # if np.linalg.norm(reachable_set.parent_state-goal_state)<5e-1:
+        #     distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state)
+        # elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<5e-1:
+        #     distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state_2)
+        # # if (abs(projection1[0]-goal_state[0])%(2*np.pi)<3e-1 and abs(projection1[1]-goal_state[1])<3e-1) or \
+        # # (abs(projection2[0] - goal_state[0]) % (2 * np.pi) < 3e-1 and abs(projection2[1] - goal_state[1]) < 3e-1):
+        # #     return True
+        # else:
+        #     return False
+        # if distance<2e-1:
+        if np.linalg.norm(reachable_set.parent_state-goal_state)<2e-1 or \
+                np.linalg.norm(reachable_set.parent_state-goal_state_2)<2e-1:
             return True
         return False
 
