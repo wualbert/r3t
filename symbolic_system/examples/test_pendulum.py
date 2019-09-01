@@ -14,6 +14,7 @@ def test_pendulum_planning():
     initial_state = np.zeros(2)
     pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.1],[0.1]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
+    goal_state_2 = np.asarray([-np.pi,0.0])
     step_size = 0.1
     def uniform_sampler():
         rnd = np.random.rand(2)
@@ -42,12 +43,16 @@ def test_pendulum_planning():
         return rnd
 
     def contains_goal_function(reachable_set, goal_state):
-        distance1, projection1 = distance_point_polytope(reachable_set.polytope_list, goal_state)
-        distance2, projection2 = distance_point_polytope(reachable_set.polytope_list, np.asarray([goal_state[0]-2*np.pi, goal_state[1]]))
+        if np.linalg.norm(reachable_set.parent_state-goal_state)<5e-1:
+            distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state)
+        elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<5e-1:
+            distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state_2)
         # if (abs(projection1[0]-goal_state[0])%(2*np.pi)<3e-1 and abs(projection1[1]-goal_state[1])<3e-1) or \
         # (abs(projection2[0] - goal_state[0]) % (2 * np.pi) < 3e-1 and abs(projection2[1] - goal_state[1]) < 3e-1):
         #     return True
-        if distance1<2e-1 or distance2<2e-1:
+        else:
+            return False
+        if distance<2e-1:
             return True
         return False
 
@@ -124,7 +129,6 @@ def test_pendulum_planning():
 
         if found_goal:
             break
-
 
 if __name__=='__main__':
     test_pendulum_planning()
