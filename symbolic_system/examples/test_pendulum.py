@@ -19,7 +19,12 @@ def test_pendulum_planning():
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = (rnd[0]-0.5)*5*np.pi
-        rnd[1] = (rnd[1]-0.5)*20
+        rnd[1] = (rnd[1]-0.5)*10
+        goal_bias_rnd = np.random.rand(1)
+        if goal_bias_rnd <0.05:
+            return goal_state
+        elif goal_bias_rnd < 0.1:
+            return np.asarray([-np.pi,0.0])
         return rnd
 
     def gaussian_mixture_sampler():
@@ -58,7 +63,7 @@ def test_pendulum_planning():
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(pendulum_system, big_gaussian_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = SymbolicSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, step_size, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -66,7 +71,7 @@ def test_pendulum_planning():
     os.makedirs('RRT_Pendulum_'+experiment_name)
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=False) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes

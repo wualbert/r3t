@@ -166,7 +166,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
         else:
             if self.polytope_tree is None:
                 return None
-            assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
+            # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
             best_polytope = self.polytope_tree.find_closest_polytopes(query_state)[0]
             return [self.polytope_to_id[best_polytope]]
 

@@ -321,7 +321,6 @@ class RGRRTStar:
                         break
                 if discard:  # No state in the reachable set is better the the nearest state
                     # print('Warning: discarding state')
-                    # TODO: better sampling method to grow tree, especially when no actuation is avaiable
                     continue
                 else:
                     sample_is_valid = True
