@@ -18,8 +18,8 @@ def test_pendulum_planning():
     step_size = 0.1
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = (rnd[0]-0.5)*5*np.pi
-        rnd[1] = (rnd[1]-0.5)*10
+        rnd[0] = (rnd[0]-0.5)*2*1.1*np.pi
+        rnd[1] = (rnd[1]-0.5)*2*7.5
         goal_bias_rnd = np.random.rand(1)
         if goal_bias_rnd <0.05:
             return goal_state
@@ -30,8 +30,8 @@ def test_pendulum_planning():
     def gaussian_mixture_sampler():
         gaussian_ratio = 0.1
         rnd = np.random.rand(2)
-        rnd[0] = np.random.normal(goal_state[0],2)
-        rnd[1] = np.random.normal(goal_state[1],2)
+        rnd[0] = np.random.normal(goal_state[0],0.1)
+        rnd[1] = np.random.normal(goal_state[1],0.1)
         if np.random.rand(1) > gaussian_ratio:
             return uniform_sampler()
         return rnd

@@ -148,7 +148,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
 
         except TypeError:
             if self.polytope_tree is None:
-                self.polytope_tree = PolytopeTree(np.array([reachable_set.polytope_list]), key_vertex_count=self.key_vertex_count)
+                self.polytope_tree = PolytopeTree(np.atleast_1d([reachable_set.polytope_list]).flatten(), key_vertex_count=self.key_vertex_count)
                 # for d_neighbor_ids
                 # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
             else:
@@ -185,13 +185,22 @@ class SymbolicSystem_StateTree(StateTree):
         StateTree.__init__(self)
         self.state_id_to_state = {}
         self.state_tree_p = index.Property()
-        self.state_idx = index.Index()
+        self.state_idx = None
+
+    # delayed initialization to consider dimensions
+    def initialize(self, dim):
+        self.state_tree_p.dimension=dim
+        print('Symbolic System State Tree dimension is %d-D' % self.state_tree_p.dimension)
+        self.state_idx = index.Index(properties=self.state_tree_p)
 
     def insert(self, state_id, state):
+        if not self.state_idx:
+            self.initialize(state.shape[0])
         self.state_idx.insert(state_id, np.concatenate([state,state]))
         self.state_id_to_state[state_id] = state
 
     def state_ids_in_reachable_set(self, query_reachable_set):
+        assert(self.state_idx is not None)
         try:
             state_ids_list = []
             for p in query_reachable_set.polytope_list:

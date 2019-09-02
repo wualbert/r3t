@@ -19,41 +19,40 @@ def test_hopper_2d_planning():
     goal_state = np.asarray([0.,0.,5.,0.,0.,0.,0.,0.,0.,0.])
     goal_tolerance = [2.5e-2,2.5e-2,2.5e-2,10,10,1,1,1,1,1]
     step_size = 1e-2
+    #TODO
     def uniform_sampler():
-        rnd = np.random.rand(2)
-        rnd[0] = rnd[0]*2
-        rnd[1] = (rnd[1]-0.5)*2*5
+        rnd = (np.random.rand(10)-0.5)*10
         goal_bias = np.random.rand(1)
         if goal_bias<0.25:
             return goal_state
         return rnd
 
-    def gaussian_mixture_sampler():
-        gaussian_ratio = 0.4
-        rnd = np.random.rand(2)
-        rnd[0] = np.random.normal(l+0.5*p,2*p)
-        rnd[1] = (np.random.rand(1)-0.5)*2*4
-        if np.random.rand(1) > gaussian_ratio:
-            return uniform_sampler()
-        return rnd
-
-    def action_space_mixture_sampler():
-        action_space_ratio = 0.08
-        if np.random.rand(1) < action_space_ratio:
-            rnd = np.random.rand(2)
-            rnd[0] = rnd[0]*p*1.2+l
-            rnd[1] = (rnd[1]-0.5)*2*8
-            return rnd
-        else:
-            rnd = np.random.rand(2)
-            rnd[0] = rnd[0]*4 + l
-            rnd[1] = (rnd[1] - 0.5) * 2 * 2
-            goal_bias = np.random.rand(1)
-            if goal_bias < 0.35:
-                rnd[0] = np.random.normal(goal_state[0],1.5)
-                rnd[1] = np.random.normal(goal_state[1],1.5)
-                return rnd
-            return rnd
+    # def gaussian_mixture_sampler():
+    #     gaussian_ratio = 0.4
+    #     rnd = np.random.rand(2)
+    #     rnd[0] = np.random.normal(l+0.5*p,2*p)
+    #     rnd[1] = (np.random.rand(1)-0.5)*2*4
+    #     if np.random.rand(1) > gaussian_ratio:
+    #         return uniform_sampler()
+    #     return rnd
+    #
+    # def action_space_mixture_sampler():
+    #     action_space_ratio = 0.08
+    #     if np.random.rand(1) < action_space_ratio:
+    #         rnd = np.random.rand(2)
+    #         rnd[0] = rnd[0]*p*1.2+l
+    #         rnd[1] = (rnd[1]-0.5)*2*8
+    #         return rnd
+    #     else:
+    #         rnd = np.random.rand(2)
+    #         rnd[0] = rnd[0]*4 + l
+    #         rnd[1] = (rnd[1] - 0.5) * 2 * 2
+    #         goal_bias = np.random.rand(1)
+    #         if goal_bias < 0.35:
+    #             rnd[0] = np.random.normal(goal_state[0],1.5)
+    #             rnd[1] = np.random.normal(goal_state[1],1.5)
+    #             return rnd
+    #         return rnd
 
     def contains_goal_function(reachable_set, goal_state):
         distance = np.inf
@@ -67,7 +66,7 @@ def test_hopper_2d_planning():
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(hopper_system, gaussian_mixture_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = SymbolicSystem_RGRRTStar(hopper_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
