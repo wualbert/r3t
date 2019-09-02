@@ -13,19 +13,20 @@ import os
 def test_hopper_2d_planning():
     initial_state = np.asarray([0.,0.,0.,1.,0.8,0.,0.,0.,0.,0.])
     hopper_system = Hopper_2d(initial_state=initial_state)
-    l = 1
-    p = 0.1
     # [theta1, theta2, x0, y0, w]
     # from x0 = 0 move to x0 = 5
-    goal_state = np.asarray([0.,0.,5.,0.,0.,0.,0.,0.,0.,0.])
-    goal_tolerance = [2.5e-2,2.5e-2,2.5e-2,10,10,1,1,1,1,1]
-    step_size = 1e-2
+    goal_state = np.asarray([0.,0.,50.,0.,0.,0.,0.,0.,0.,0.])
+    goal_tolerance = [10,10,2.5e-2,10,10,5,5,5,5,5]
+    step_size = 5e-2
     #TODO
     def uniform_sampler():
-        rnd = (np.random.rand(10)-0.5)*10
+        rnd = np.random.rand(10)
+        rnd[0] = (rnd[0]-0.5)*2*np.pi
+        rnd[1] = (rnd[1] - 0.5) * 2 * np.pi
+        rnd[2] = (rnd[2] - 0.5) * 2 * 150
+        rnd[3] = rnd[3] * 20
+        rnd[5:] = (rnd[5:]-0.5)*2*5
         goal_bias = np.random.rand(1)
-        if goal_bias<0.25:
-            return goal_state
         return rnd
 
     # def gaussian_mixture_sampler():
@@ -94,11 +95,10 @@ def test_hopper_2d_planning():
         fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, dims=[2,3])
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
-        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
-        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
+        ax.scatter(initial_state[2], initial_state[3], facecolor='red', s=5)
         # ax.set_aspect('equal')
-        plt.plot([l+p, l+p], [-2.5, 2.5], 'm--', lw=1.5)
-        plt.plot([l, l], [-2.5, 2.5], 'b--', lw=1.5)
+        # plt.plot([l+p, l+p], [-2.5, 2.5], 'm--', lw=1.5)
+        plt.plot([5,5], [-2.5, 2.5], 'g--', lw=1.5)
 
         # ax.set_xlim(left=0)
         plt.xlabel('$x_0$')

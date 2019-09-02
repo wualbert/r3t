@@ -15,23 +15,23 @@ def test_pendulum_planning():
     pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.1],[0.1]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
-    step_size = 0.1
+    step_size = 0.075
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = (rnd[0]-0.5)*2*1.1*np.pi
-        rnd[1] = (rnd[1]-0.5)*2*7.5
+        rnd[0] = (rnd[0]-0.5)*2*2*np.pi
+        rnd[1] = (rnd[1]-0.5)*2*15
         goal_bias_rnd = np.random.rand(1)
-        if goal_bias_rnd <0.05:
-            return goal_state
-        elif goal_bias_rnd < 0.1:
-            return np.asarray([-np.pi,0.0])
+        # if goal_bias_rnd <0.05:
+        #     return goal_state
+        # elif goal_bias_rnd < 0.1:
+        #     return np.asarray([-np.pi,0.0])
         return rnd
 
     def gaussian_mixture_sampler():
-        gaussian_ratio = 0.1
+        gaussian_ratio = 0.0
         rnd = np.random.rand(2)
-        rnd[0] = np.random.normal(goal_state[0],0.1)
-        rnd[1] = np.random.normal(goal_state[1],0.1)
+        rnd[0] = np.random.normal(goal_state[0],1)
+        rnd[1] = np.random.normal(goal_state[1],1)
         if np.random.rand(1) > gaussian_ratio:
             return uniform_sampler()
         return rnd
@@ -58,12 +58,12 @@ def test_pendulum_planning():
         # else:
         #     return False
         # if distance<2e-1:
-        if np.linalg.norm(reachable_set.parent_state-goal_state)<2e-1 or \
-                np.linalg.norm(reachable_set.parent_state-goal_state_2)<2e-1:
+        if np.linalg.norm(reachable_set.parent_state-goal_state)<1e-1 or \
+                np.linalg.norm(reachable_set.parent_state-goal_state_2)<1e-1:
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(pendulum_system, gaussian_mixture_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = SymbolicSystem_RGRRTStar(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
