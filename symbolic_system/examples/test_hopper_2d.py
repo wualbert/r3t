@@ -4,7 +4,7 @@ from timeit import default_timer
 from polytope_symbolic_system.examples.hopper_2d import Hopper_2d
 from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
-from pypolycontain.lib.AH_polytope import distance_point
+from pypolycontain.lib.operations import distance_point_polytope
 from rg_rrt_star.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
@@ -58,7 +58,7 @@ def test_hopper_2d_planning():
         distance = np.inf
         projection = None
         for p in reachable_set.polytope_list:
-            d, proj = distance_point(p, goal_state)
+            d, proj = distance_point_polytope(p, goal_state)
             if d<distance:
                 projection = np.asarray(proj)
                 distance = d
