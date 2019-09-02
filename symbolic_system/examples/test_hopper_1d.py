@@ -131,4 +131,5 @@ def test_hopper_1d_planning():
 
 
 if __name__=='__main__':
-    test_hopper_1d_planning()
+    for i in range(10):
+        test_hopper_1d_planning()
