@@ -16,6 +16,7 @@ def test_hopper_2d_planning():
     l = 1
     p = 0.1
     # [theta1, theta2, x0, y0, w]
+    # from x0 = 0 move to x0 = 5
     goal_state = np.asarray([0.,0.,5.,0.,0.,0.,0.,0.,0.,0.])
     goal_tolerance = [2.5e-2,2.5e-2,2.5e-2,10,10,1,1,1,1,1]
     step_size = 1e-2
@@ -90,8 +91,7 @@ def test_hopper_2d_planning():
         # print('number of nodes',rrt.node_tally)
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
-        # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
+        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, dims=[2,3])
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
         ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
@@ -101,11 +101,11 @@ def test_hopper_2d_planning():
         plt.plot([l, l], [-2.5, 2.5], 'b--', lw=1.5)
 
         # ax.set_xlim(left=0)
-        plt.xlabel('$x$')
-        plt.ylabel('$\dot{x}$')
+        plt.xlabel('$x_0$')
+        plt.ylabel('$y_0$')
         duration += (end_time-start_time)
         plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
-        plt.savefig('RRT_Hopper_1d_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
+        plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
         # plt.show()
         plt.clf()
         plt.close()
