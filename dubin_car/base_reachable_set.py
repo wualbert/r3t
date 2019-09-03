@@ -1,13 +1,20 @@
 import numpy as np
 # import cPickle as pickle
 # import dill
-from common.rg_rrt_star import *
+from rg_rrt_star.common.rg_rrt_star import *
 import os
 from collections import deque
 from utils.utils import *
-from bounding_box_closest_polytope.lib.box import AABB, point_in_box
+from closest_polytope.bounding_box.box import AABB, point_in_box
 import dubins
 from timeit import default_timer
+
+def wrap_angle(theta):
+    theta %= 2*np.pi
+    if theta>=np.pi:
+        return theta-2*np.pi
+    else:
+        return theta
 
 class Base_DC_Reachable_Set(ReachableSet):
     '''
@@ -52,7 +59,7 @@ class Base_DC_Reachable_Set(ReachableSet):
         x_index, y_index, theta_index = self.coordinates_to_index(car_frame_goal_state)
         return self.is_reachables[x_index, y_index, theta_index]
 
-    def plan_collision_free_path_in_set(self, car_frame_goal_state):
+    def plan_collision_free_path_in_set(self, car_frame_goal_state, return_deterministic_next_state=False):
         '''
         Plans a path between self.state and goal_state. Goals state must be in this reachable set
         Does NOT check for collisions!

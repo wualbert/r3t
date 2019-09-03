@@ -1,4 +1,4 @@
-from common.rg_rrt_star import *
+from rg_rrt_star.common.rg_rrt_star import *
 from rtree import index
 import matplotlib.pyplot as plt
 from matplotlib import collections  as mc
@@ -12,8 +12,15 @@ import sys
 from dubin_car.base_reachable_set import *
 import dubins
 from time import time
-from bounding_box_closest_polytope.lib.box import AABB, point_in_box
-from bounding_box_closest_polytope.visualization.visualize import visualize_boxes
+from closest_polytope.bounding_box.box import AABB, point_in_box
+from closest_polytope.visualization.visualize import visualize_boxes
+
+def wrap_angle(theta):
+    theta %= 2*np.pi
+    if theta>=np.pi:
+        return theta-2*np.pi
+    else:
+        return theta
 
 class DC_Path(Path):
     def __init__(self,state, car_frame_path,turn_radius, cost):
@@ -197,7 +204,7 @@ class DC_ReachableSet(ReachableSet):
         '''
         return self.BASE_REACHABLE_SET.contains(self.transform_to_car_frame(goal_state))
 
-    def plan_collision_free_path_in_set(self, goal_state):
+    def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state=False):
         '''
         Plans a path between self.state and goal_state. Goals state must be in this reachable set
         :param state:

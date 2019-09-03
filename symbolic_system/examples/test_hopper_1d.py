@@ -114,8 +114,8 @@ def test_hopper_1d_planning():
         ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
         ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
         # ax.set_aspect('equal')
-        plt.plot([l+p, l+p], [-2.5, 2.5], 'm--', lw=1.5)
-        plt.plot([l, l], [-2.5, 2.5], 'b--', lw=1.5)
+        plt.plot([l+p, l+p], [-7,7], 'm--', lw=1.5)
+        plt.plot([l, l], [-7,7], 'b--', lw=1.5)
 
         # ax.set_xlim(left=0)
         plt.xlabel('$x$')

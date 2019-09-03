@@ -38,7 +38,7 @@ def visualize_tree(dc_rrt, world_map, visualize_all_nodes=True, visualize_all_pa
                 ax.quiver([node.state[0]], [node.state[1]],
                           [np.cos(node.state[2])], [np.sin(node.state[2])], facecolor='k',
                           scale=40, width=0.002, pivot='mid', alpha=0.4)
-            if visualize_all_paths and node.parent is not None:
+            if visualize_all_paths and node.parent is not None and node.path_from_parent is not None:
                 #SLOW!
                 #reconstruct dubin's path on the fly
                 segs = node.path_from_parent.get_dubins_interpolated_path()

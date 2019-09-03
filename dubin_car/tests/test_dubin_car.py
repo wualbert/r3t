@@ -29,7 +29,7 @@ def test_fixed_small_boxy_world():
     for obs in obstacles:
         world.add_obstacle(obs)
     rrt = DC_RGRRTStar(root,world.point_collides_with_obstacle, world.random_sampler, rewire_radius=4)
-    goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, allocated_time=np.inf)
+    goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, allocated_time=np.inf, explore_deterministic_next_state = False)
     if goal_node is None:
         print('No path found!')
         return
@@ -49,7 +49,7 @@ def test_fixed_small_boxy_world_long_time(time=15):
     for obs in obstacles:
         world.add_obstacle(obs)
     rrt = DC_RGRRTStar(root,world.point_collides_with_obstacle, world.random_sampler, rewire_radius=4)
-    goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=False, allocated_time=time)
+    goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=False, allocated_time=time, explore_deterministic_next_state = False)
     if goal_node is None:
         print('No path found!')
         return
@@ -75,7 +75,7 @@ def test_fixed_medium_boxy_world_optimality(try_duration,tries = 5, plot_routes 
 
     #first try
     start_time = default_timer()
-    goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True)
+    goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, explore_deterministic_next_state = False)
     total_duration = default_timer()-start_time
     costs[0] = goal_node.cost_from_root
     times[0] = total_duration
@@ -88,7 +88,7 @@ def test_fixed_medium_boxy_world_optimality(try_duration,tries = 5, plot_routes 
 
     for i in range(1,tries):
         start_time = default_timer()
-        goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=False,allocated_time=try_duration)
+        goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=False,allocated_time=try_duration, explore_deterministic_next_state = False)
         try_duration = default_timer()-start_time
         total_duration+=try_duration
         costs[i] = goal_node.cost_from_root
@@ -131,7 +131,7 @@ def test_fixed_ring_boxy_world():
         world.add_obstacle(obs)
     rrt = DC_RGRRTStar(root,world.point_collides_with_obstacle, world.random_sampler, rewire_radius=4)
     start_time = default_timer()
-    goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, allocated_time=np.inf)
+    goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, allocated_time=np.inf, explore_deterministic_next_state = False)
     if goal_node is None:
         print('No path found!')
         return

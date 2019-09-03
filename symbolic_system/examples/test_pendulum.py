@@ -117,8 +117,8 @@ def test_pendulum_planning():
         ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
 
         # ax.set_aspect('equal')
-        plt.xlabel('$x$')
-        plt.ylabel('$\dot{x}$')
+        plt.xlabel('$\\theta$')
+        plt.ylabel('$\dot{\\theta}$')
         duration += (end_time-start_time)
         plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
         plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
