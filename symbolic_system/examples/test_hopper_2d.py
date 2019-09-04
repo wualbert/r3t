@@ -2,16 +2,73 @@ import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.hopper_2d import Hopper_2d
-from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
+from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar, PolytopeReachableSet
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from pypolycontain.lib.operations import distance_point_polytope
 from rg_rrt_star.utils.visualization import visualize_node_tree_2D
+from collections import deque
 import time
 from datetime import datetime
 import os
 
+class Hopper2D_ReachableSet(PolytopeReachableSet):
+    def __init__(self, parent_state, polytope_list, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, ground_height_function = lambda x:0):
+        PolytopeReachableSet.__init__(self, parent_state, polytope_list, epsilon, contains_goal_function, deterministic_next_state)
+        self.ground_height_function = ground_height_function
+    def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
+        #fixme: support collision checking
+        #check for impossible configurations
+
+        # body attitude is off
+        if goal_state[2]>np.pi/2 or goal_state[2]<-np.pi/2:
+            return np.inf, None, None
+        # tipped over
+        if goal_state[3]>np.pi/2 or goal_state[3]<-np.pi/2:
+            return np.inf, None, None
+
+        # stuck in the ground
+        if goal_state[1]<self.ground_height_function(goal_state[0])-1e-2:
+            return np.inf, None, None
+
+        # stuck in the ground
+        if goal_state[4]<0:
+            return np.inf, None, None
+
+        #
+        # is_contain, closest_state = self.contains(goal_state)
+        # if not is_contain:
+        #     print('Warning: this should never happen')
+        #     return np.linalg.norm(self.parent_state-closest_state), deque([self.parent_state, closest_state]) #FIXME: distance function
+
+        # Simulate forward dynamics if there can only be one state in the next timestep
+        if not return_deterministic_next_state:
+            return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
+        return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state]), self.deterministic_next_state
+
+class Hopper2D_RGRRTStar(SymbolicSystem_RGRRTStar):
+    def __init__(self, sys, sampler, step_size, contains_goal_function = None):
+        self.sys = sys
+        self.step_size = step_size
+        self.contains_goal_function = contains_goal_function
+        def compute_reachable_set(state):
+            '''
+            Compute zonotopic reachable set using the system
+            :param h:
+            :return:
+            '''
+            deterministic_next_state = None
+            reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size)
+            # print("T", reachable_set_polytope[0].T)
+            # print("t", reachable_set_polytope[0].t)
+            # print("H", reachable_set_polytope[0].P.H)
+            # print("h", reachable_set_polytope[0].P.h)
+            if np.all(self.sys.get_linearization(state=state).B == 0):
+                deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
+            return Hopper2D_ReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
+        SymbolicSystem_RGRRTStar.__init__(self, sys, sampler, step_size, contains_goal_function, compute_reachable_set)
+
 def test_hopper_2d_planning():
-    initial_state = np.asarray([0.,0.,0.,1.,0.8,0.,0.,0.,0.,0.])
+    initial_state = np.asarray([0.5, 5, 0, 0, 10, 0.5, 0., 0., 0., 0.])
     hopper_system = Hopper_2d(initial_state=initial_state)
     # [theta1, theta2, x0, y0, w]
     # from x0 = 0 move to x0 = 5
@@ -21,10 +78,11 @@ def test_hopper_2d_planning():
     #TODO
     def uniform_sampler():
         rnd = np.random.rand(10)
-        rnd[0] = (rnd[0]-0.5)*2*np.pi
-        rnd[1] = (rnd[1] - 0.5) * 2 * np.pi
-        rnd[2] = (rnd[2] - 0.5) * 2 * 150
-        rnd[3] = rnd[3] * 20
+        rnd[0] = rnd[0]*50
+        rnd[1] = rnd[1]*20
+        rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/2
+        rnd[3] = (rnd[3]-0.5) * 2 * np.pi/2
+        rnd[4] = rnd[4]*2
         rnd[5:] = (rnd[5:]-0.5)*2*5
         goal_bias = np.random.rand(1)
         return rnd
@@ -68,7 +126,7 @@ def test_hopper_2d_planning():
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(hopper_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = Hopper2D_RGRRTStar(hopper_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -95,7 +153,7 @@ def test_hopper_2d_planning():
         fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, dims=[2,3])
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
-        ax.scatter(initial_state[2], initial_state[3], facecolor='red', s=5)
+        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
         # ax.set_aspect('equal')
         # plt.plot([l+p, l+p], [-2.5, 2.5], 'm--', lw=1.5)
         plt.plot([5,5], [-2.5, 2.5], 'g--', lw=1.5)

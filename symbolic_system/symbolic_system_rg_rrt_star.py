@@ -97,6 +97,8 @@ class PolytopeReachableSet(ReachableSet):
         return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
 
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
+        if self.plan_collision_free_path_in_set_function:
+            return self.plan_collision_free_path_in_set_function(goal_state, return_deterministic_next_state)
         #fixme: support collision checking
 
         #
@@ -212,23 +214,24 @@ class SymbolicSystem_StateTree(StateTree):
             return list(self.state_idx.intersection(lu))
 
 class SymbolicSystem_RGRRTStar(RGRRTStar):
-    def __init__(self, sys, sampler, step_size, contains_goal_function = None):
+    def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_reachable_set=None):
         self.sys = sys
         self.step_size = step_size
         self.contains_goal_function = contains_goal_function
-        def compute_reachable_set(state):
-            '''
-            Compute zonotopic reachable set using the system
-            :param h:
-            :return:
-            '''
-            deterministic_next_state = None
-            reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size)
-            # print("T", reachable_set_polytope[0].T)
-            # print("t", reachable_set_polytope[0].t)
-            # print("H", reachable_set_polytope[0].P.H)
-            # print("h", reachable_set_polytope[0].P.h)
-            if np.all(self.sys.get_linearization(state=state).B == 0):
-                deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
-            return PolytopeReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
+        if compute_reachable_set is None:
+            def compute_reachable_set(state):
+                '''
+                Compute zonotopic reachable set using the system
+                :param h:
+                :return:
+                '''
+                deterministic_next_state = None
+                reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size)
+                # print("T", reachable_set_polytope[0].T)
+                # print("t", reachable_set_polytope[0].t)
+                # print("H", reachable_set_polytope[0].P.H)
+                # print("h", reachable_set_polytope[0].P.h)
+                if np.all(self.sys.get_linearization(state=state).B == 0):
+                    deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
+                return PolytopeReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
         RGRRTStar.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)
