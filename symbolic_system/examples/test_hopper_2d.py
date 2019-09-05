@@ -100,13 +100,13 @@ def test_hopper_2d_planning():
         rnd = np.random.rand(10)
         rnd[0] = (rnd[0]-.1)*10+5
         rnd[1] = (rnd[1]-0.2)*10
-        rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/2
-        rnd[3] = (rnd[3]-0.5) * 2 * np.pi/2
+        rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/3
+        rnd[3] = (rnd[3]-0.5) * 2 * np.pi/4
         rnd[4] = (rnd[4]-0.5)*2*2.5+3
-        rnd[5] = (rnd[5]-0.2)*2*4
+        rnd[5] = (rnd[5]-0.2)*2*8
         rnd[6] = (rnd[6] - 0.5) * 2 * 10
-        rnd[7] = (rnd[7] - 0.5) * 2 * 2
-        rnd[8] = (rnd[8] - 0.5) * 2 * 2
+        rnd[7] = (rnd[7] - 0.5) * 2 * 4
+        rnd[8] = (rnd[8] - 0.5) * 2 * 4
         rnd[9] = (rnd[9] - 0.1) * 2 * 20
         # goal_bias = np.random.rand(1)
         return rnd
