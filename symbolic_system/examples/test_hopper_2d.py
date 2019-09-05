@@ -4,7 +4,8 @@ from timeit import default_timer
 from polytope_symbolic_system.examples.hopper_2d import Hopper_2d
 from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar, PolytopeReachableSet
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
-from pypolycontain.lib.operations import distance_point_polytope
+from pypolycontain.lib.polytope import polytope
+from pypolycontain.lib.operations import distance_point_polytope, distance_polytopes
 from rg_rrt_star.utils.visualization import visualize_node_tree_2D
 from collections import deque
 import time
@@ -19,21 +20,37 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
         #fixme: support collision checking
         #check for impossible configurations
 
-        # body attitude is off
-        if goal_state[2]>np.pi/2 or goal_state[2]<-np.pi/2:
-            return np.inf, None, None
         # tipped over
-        if goal_state[3]>np.pi/2 or goal_state[3]<-np.pi/2:
-            return np.inf, None, None
+        if goal_state[2]>np.pi/5 or goal_state[2]<-np.pi/5:
+            print('leg tipped over')
+            if return_deterministic_next_state:
+                return np.inf, None, None
+            else:
+                return np.inf, None
+
+        # body attitude is off
+        if goal_state[3]>np.pi/3 or goal_state[3]<-np.pi/3:
+            print('body attitude off')
+            if return_deterministic_next_state:
+                return np.inf, None, None
+            else:
+                return np.inf, None
 
         # stuck in the ground
-        if goal_state[1]<self.ground_height_function(goal_state[0])-1e-2:
-            return np.inf, None, None
+        if goal_state[1]<self.ground_height_function(goal_state[0])-.8:
+            print('stuck in ground')
+            if return_deterministic_next_state:
+                return np.inf, None, None
+            else:
+                return np.inf, None
 
         # stuck in the ground
-        if goal_state[4]<0:
-            return np.inf, None, None
-
+        if goal_state[4]<0.2:
+            print('r invalid')
+            if return_deterministic_next_state:
+                return np.inf, None, None
+            else:
+                return np.inf, None
         #
         # is_contain, closest_state = self.contains(goal_state)
         # if not is_contain:
@@ -58,33 +75,40 @@ class Hopper2D_RGRRTStar(SymbolicSystem_RGRRTStar):
             '''
             deterministic_next_state = None
             reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size)
-            # print("T", reachable_set_polytope[0].T)
-            # print("t", reachable_set_polytope[0].t)
-            # print("H", reachable_set_polytope[0].P.H)
-            # print("h", reachable_set_polytope[0].P.h)
+            # if state[1] <= 0:
+            #     print('state', state)
+            #     print("T", reachable_set_polytope[0].T)
+            #     print("t", reachable_set_polytope[0].t)
+            #     print("H", reachable_set_polytope[0].P.H)
+            #     print("h", reachable_set_polytope[0].P.h)
+            #TODO: collision check here
             if np.all(self.sys.get_linearization(state=state).B == 0):
                 deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
             return Hopper2D_ReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
         SymbolicSystem_RGRRTStar.__init__(self, sys, sampler, step_size, contains_goal_function, compute_reachable_set)
 
 def test_hopper_2d_planning():
-    initial_state = np.asarray([0.5, 5, 0, 0, 10, 0.5, 0., 0., 0., 0.])
+    initial_state = np.asarray([0.5, 1, 0, 0, 5, 0.5, 0., 0., 0., 0.])
     hopper_system = Hopper_2d(initial_state=initial_state)
     # [theta1, theta2, x0, y0, w]
     # from x0 = 0 move to x0 = 5
-    goal_state = np.asarray([0.,0.,50.,0.,0.,0.,0.,0.,0.,0.])
-    goal_tolerance = [10,10,2.5e-2,10,10,5,5,5,5,5]
-    step_size = 5e-2
+    goal_state = np.asarray([5.,0.,0.,0.,5.,0.,0.,0.,0.,0.])
+    goal_tolerance = [0.1,10,10,10,10,5,5,5,5,5]
+    step_size = 1e-2
     #TODO
     def uniform_sampler():
         rnd = np.random.rand(10)
-        rnd[0] = rnd[0]*50
-        rnd[1] = rnd[1]*20
+        rnd[0] = (rnd[0]-.1)*10+5
+        rnd[1] = (rnd[1]-0.2)*10
         rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/2
         rnd[3] = (rnd[3]-0.5) * 2 * np.pi/2
-        rnd[4] = rnd[4]*2
-        rnd[5:] = (rnd[5:]-0.5)*2*5
-        goal_bias = np.random.rand(1)
+        rnd[4] = (rnd[4]-0.5)*2*2.5+3
+        rnd[5] = (rnd[5]-0.2)*2*4
+        rnd[6] = (rnd[6] - 0.5) * 2 * 10
+        rnd[7] = (rnd[7] - 0.5) * 2 * 2
+        rnd[8] = (rnd[8] - 0.5) * 2 * 2
+        rnd[9] = (rnd[9] - 0.1) * 2 * 20
+        # goal_bias = np.random.rand(1)
         return rnd
 
     # def gaussian_mixture_sampler():
@@ -150,7 +174,7 @@ def test_hopper_2d_planning():
         # print('number of nodes',rrt.node_tally)
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, dims=[2,3])
+        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, dims=[0,1])
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
         ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
@@ -164,6 +188,42 @@ def test_hopper_2d_planning():
         duration += (end_time-start_time)
         plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
         plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
+
+        # plt.show()
+        plt.clf()
+        plt.close()
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, dims=[1,4])
+        # for explored_state in explored_states:
+        #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
+        ax.scatter(initial_state[1], initial_state[4], facecolor='red', s=5)
+
+        # ax.set_xlim(left=0)
+        plt.xlabel('$y_0$')
+        plt.ylabel('$r$')
+        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
+        plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds_2.png' % duration, dpi=500)
+
+        # plt.show()
+        plt.clf()
+        plt.close()
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, dims=[0,4])
+        # for explored_state in explored_states:
+        #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
+        ax.scatter(initial_state[0], initial_state[4], facecolor='red', s=5)
+
+        # ax.set_xlim(left=0)
+        plt.xlabel('$x_0$')
+        plt.ylabel('$r$')
+        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
+        plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds_3.png' % duration, dpi=500)
+
+
         # plt.show()
         plt.clf()
         plt.close()
