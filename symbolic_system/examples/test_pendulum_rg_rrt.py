@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.pendulum import Pendulum
-from rg_rrt_star.symbolic_system.symbolic_system_basic_rrt import SymbolicSystem_Basic_RRT
+from rg_rrt_star.symbolic_system.symbolic_system_basic_rrt import SymbolicSystem_RGRRT
 from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope
 from pypolycontain.lib.operations import distance_point_polytope
 from rg_rrt_star.utils.visualization import visualize_node_tree_2D
@@ -58,12 +58,12 @@ def test_pendulum_planning():
             return True
         return False
 
-    rrt = SymbolicSystem_Basic_RRT(pendulum_system, uniform_sampler, step_size, reached_goal_function=reached_goal_function)
+    rrt = SymbolicSystem_RGRRT(pendulum_system, uniform_sampler, step_size, reached_goal_function=reached_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
     duration = 0
-    os.makedirs('Basic_RRT_Pendulum_'+experiment_name)
+    os.makedirs('RG_RRT_Pendulum_'+experiment_name)
     while(1):
         start_time = time.time()
         if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 100, rewire=True, explore_deterministic_next_state=False) is not None:
@@ -94,8 +94,8 @@ def test_pendulum_planning():
         plt.xlabel('$\\theta$')
         plt.ylabel('$\dot{\\theta}$')
         duration += (end_time-start_time)
-        plt.title('Basic RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
-        plt.savefig('Basic_RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
+        plt.title('RG RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.savefig('RG_RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
         # plt.show()
         plt.xlim([-4, 4])
         plt.ylim([-10,10])
@@ -126,5 +126,5 @@ def test_pendulum_planning():
             break
 
 if __name__=='__main__':
-    for i in range(1):
+    for i in range(10):
         test_pendulum_planning()

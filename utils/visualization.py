@@ -31,7 +31,6 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_
                 else:
                     lines.append([state, child_state])
         ax.scatter(*state, c='gray', s=s)
-    # print('plotted %d nodes' %i)
     if show_path_to_goal:
         goal_lines = []
         node = rrt.goal_node
@@ -40,6 +39,7 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_
             node = node.parent
         while node.parent is not None:
             goal_lines.append([np.ndarray.flatten(node.state), np.ndarray.flatten(node.parent.state)])
+            assert(node in node.parent.children)
             node = node.parent
         line_colors = np.full(len(lines), 'gray')
         line_widths = np.full(len(lines), linewidths)
