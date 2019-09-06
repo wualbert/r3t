@@ -21,7 +21,7 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
         #check for impossible configurations
 
         # tipped over
-        if goal_state[2]>np.pi/5 or goal_state[2]<-np.pi/5:
+        if goal_state[2]>np.pi/2 or goal_state[2]<-np.pi/2:
             print('leg tipped over')
             if return_deterministic_next_state:
                 return np.inf, None, None
@@ -29,7 +29,7 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
                 return np.inf, None
 
         # body attitude is off
-        if goal_state[3]>np.pi/3 or goal_state[3]<-np.pi/3:
+        if goal_state[3]>np.pi/2 or goal_state[3]<-np.pi/2:
             print('body attitude off')
             if return_deterministic_next_state:
                 return np.inf, None, None
@@ -103,7 +103,7 @@ def test_hopper_2d_planning():
         rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/3
         rnd[3] = (rnd[3]-0.5) * 2 * np.pi/4
         rnd[4] = (rnd[4]-0.5)*2*2.5+3
-        rnd[5] = (rnd[5]-0.2)*2*8
+        rnd[5] = (rnd[5]-0.2)*12
         rnd[6] = (rnd[6] - 0.5) * 2 * 10
         rnd[7] = (rnd[7] - 0.5) * 2 * 4
         rnd[8] = (rnd[8] - 0.5) * 2 * 4
