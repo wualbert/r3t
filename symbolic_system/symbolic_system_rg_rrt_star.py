@@ -97,8 +97,11 @@ class PolytopeReachableSet(ReachableSet):
         return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
 
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
-        if self.plan_collision_free_path_in_set_function:
-            return self.plan_collision_free_path_in_set_function(goal_state, return_deterministic_next_state)
+        try:
+            if self.plan_collision_free_path_in_set_function:
+                return self.plan_collision_free_path_in_set_function(goal_state, return_deterministic_next_state)
+        except AttributeError:
+            pass
         #fixme: support collision checking
 
         #

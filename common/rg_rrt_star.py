@@ -318,6 +318,12 @@ class RGRRTStar:
                         # print('Warning: state already explored')
                         discard = True
                         continue  # #sanity check to prevent numerical errors
+                    if not explore_deterministic_next_state:
+                        is_extended, new_node = self.extend(new_state, nearest_node)
+                    else:
+                        is_extended, new_node = self.extend(new_state, nearest_node, True)
+                    if not is_extended:
+                        discard=True
                     if not discard:
                         break
                 if discard:  # No state in the reachable set is better the the nearest state
@@ -326,12 +332,8 @@ class RGRRTStar:
                 else:
                     sample_is_valid = True
                 #FIXME: potential infinite loop
-            # print('Sample count: %d' %sample_count)
+
             if not explore_deterministic_next_state:
-                is_extended, new_node = self.extend(new_state, nearest_node)
-                if not is_extended: #extension failed
-                    print('Warning: extension failed')
-                    continue
                 self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
                 self.state_tree.insert(new_state_id, new_node.state)
                 try:
@@ -359,10 +361,6 @@ class RGRRTStar:
                         self.rewire(goal_node)
                     self.goal_node=goal_node
             else:
-                is_extended, new_node = self.extend(new_state, nearest_node, True)
-                if not is_extended:  # extension failed
-                    print('Warning: extension failed')
-                    continue
                 nodes_to_add = [new_node]
                 iteration_count=0
                 while iteration_count<max_nodes_to_add:
