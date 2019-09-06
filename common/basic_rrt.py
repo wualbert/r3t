@@ -109,7 +109,7 @@ class BasicRRT:
         self.rewire_radius=rewire_radius
         self.plan_collision_free_path=plan_collision_free_path
 
-    def create_child_node(self, parent_node, child_state,cost_from_parent = None, path_from_parent = None):
+    def create_child_node(self, parent_node, child_state, cost_from_parent, path_from_parent):
         '''
         Given a child state reachable from a parent node, create a node with that child state
         :param parent_node: parent
@@ -122,8 +122,6 @@ class BasicRRT:
         # compute the cost to go and path to reach from parent
         # if cost_from_parent is None or path_from_parent is None:
         # assert (parent_node.reachable_set.contains(child_state))
-        cost_from_parent, path_from_parent = self.plan_collision_free_path(parent_node.staet, child_state)
-        assert path_from_parent is not None
         # construct a new node
         new_node = Node(child_state, parent=parent_node, path_from_parent=path_from_parent, cost_from_parent=cost_from_parent)
         parent_node.children.add(new_node)

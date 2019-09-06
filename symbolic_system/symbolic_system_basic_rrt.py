@@ -10,13 +10,17 @@ class SymbolicSystem_Basic_RRT(BasicRRT):
             # sample the control space
             # TODO: support higher dimensions
             print(sys.input_limits[0,:])
-            possible_inputs = np.linpace(*sys.input_limits[0,:], num=50)
+            possible_inputs = np.linspace(*sys.input_limits[0,:], num=50)
             best_input = None
+            best_new_state = None
+            best_distance = np.inf
             for input in possible_inputs:
+                new_potential_state = self.sys.forward_step(starting_state = nearest_state, u=best_input, modify_system=False, return_as_env=False, step_size=self.step_size)
+                new_distance = np.linalg.norm(new_state - new_potential_state)
+                if new_distance<best_distance:
+                    best_input=input
+                    best_new_state=new_potential_state
+                    best_distance=new_distance
+            return best_distance, best_new_state
 
-            # forward simulate with control space samples
-            new_env = self.sys._state_to_env(nearest_state, u)
-            self.sys.forward_step()
-
-            # find the closest
         BasicRRT.__init__(self,self.sys.get_current_state(),sampler,reached_goal_function, plan_collision_free_path)
