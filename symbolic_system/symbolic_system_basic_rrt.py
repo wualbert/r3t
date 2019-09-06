@@ -9,7 +9,7 @@ class SymbolicSystem_Basic_RRT(BasicRRT):
         def plan_collision_free_path_towards(nearest_state, new_state):
             # sample the control space
             # TODO: support higher dimensions
-            possible_inputs = np.linspace(*sys.input_limits[:,0], num=50)
+            possible_inputs = np.linspace(*sys.input_limits[:,0], num=10)
             best_input = None
             best_new_state = None
             best_distance = np.inf
@@ -35,7 +35,7 @@ class SymbolicSystem_RGRRT(RGRRT):
         def plan_collision_free_path_towards(nearest_state, new_state):
             # sample the control space
             # TODO: support higher dimensions
-            possible_inputs = np.linspace(*sys.input_limits[:,0], num=50)
+            possible_inputs = np.linspace(*sys.input_limits[:,0], num=10)
             best_input = None
             best_new_state = None
             best_distance = np.inf
@@ -53,7 +53,7 @@ class SymbolicSystem_RGRRT(RGRRT):
         RGRRT.__init__(self,self.sys.get_current_state(),sampler,reached_goal_function, plan_collision_free_path_towards)
 
     def get_reachable_states(self, state):
-        possible_inputs = np.linspace(*self.sys.input_limits[:, 0], num=50)
+        possible_inputs = np.linspace(*self.sys.input_limits[:, 0], num=10)
         possible_new_states = []
         for input in possible_inputs:
             possible_new_states.append(self.sys.forward_step(starting_state=np.atleast_1d(state),

@@ -126,5 +126,5 @@ def test_pendulum_planning():
             break
 
 if __name__=='__main__':
-    for i in range(1):
+    for i in range(10):
         test_pendulum_planning()

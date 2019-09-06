@@ -66,7 +66,7 @@ def test_pendulum_planning():
     os.makedirs('RG_RRT_Pendulum_'+experiment_name)
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 100, rewire=True, explore_deterministic_next_state=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 100, rewire=False, explore_deterministic_next_state=False) is not None:
             found_goal = True
         end_time = time.time()
 
@@ -126,5 +126,5 @@ def test_pendulum_planning():
             break
 
 if __name__=='__main__':
-    for i in range(10):
+    for i in range(1):
         test_pendulum_planning()
