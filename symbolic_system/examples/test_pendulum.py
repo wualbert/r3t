@@ -12,7 +12,7 @@ import os
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.2],[0.2]]), m=1, l=0.5, g=9.8, b=0.1)
+    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.1],[0.1]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
     step_size = 0.075
@@ -85,7 +85,7 @@ def test_pendulum_planning():
     while(1):
 
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 80, rewire=True, explore_deterministic_next_state=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 10, rewire=True, explore_deterministic_next_state=False) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes

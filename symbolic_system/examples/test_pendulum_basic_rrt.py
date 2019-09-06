@@ -12,7 +12,7 @@ import os
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.2],[0.2]]), m=1, l=0.5, g=9.8, b=0.1)
+    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.1],[0.1]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
     step_size = 0.075
@@ -54,7 +54,7 @@ def test_pendulum_planning():
         return rnd
 
     def reached_goal_function(state, goal_state):
-        if np.linalg.norm(state.parent_state-goal_state)<1.5e-1 or np.linalg.norm(state-goal_state_2)<1.5e-1:
+        if np.linalg.norm(state-goal_state)<1.5e-1 or np.linalg.norm(state-goal_state_2)<1.5e-1:
             return True
         return False
 
@@ -63,24 +63,13 @@ def test_pendulum_planning():
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
     duration = 0
-    os.makedirs('RRT_Pendulum_'+experiment_name)
+    os.makedirs('Basic_RRT_Pendulum_'+experiment_name)
     while(1):
-
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 80, rewire=True, explore_deterministic_next_state=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 10, rewire=True, explore_deterministic_next_state=False) is not None:
             found_goal = True
         end_time = time.time()
-        #get rrt polytopes
-        polytope_reachable_sets = rrt.reachable_set_tree.id_to_reachable_sets.values()
-        reachable_polytopes = []
-        explored_states = []
-        for prs in polytope_reachable_sets:
-            reachable_polytopes.append(prs.polytope_list)
-            explored_states.append(prs.parent_state)
-        # print(explored_states)
-        # print(len(explored_states))
-        # print('number of nodes',rrt.node_tally)
-        goal_override = None
+
         if found_goal:
             p = rrt.goal_node.parent.state
             if np.linalg.norm(p-np.asarray([np.pi,0.0])) < np.linalg.norm(p-np.asarray([-np.pi,0.0])):
@@ -90,7 +79,10 @@ def test_pendulum_planning():
         # Plot state tree
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, goal_override=goal_override)
+        if found_goal:
+            fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, goal_override=goal_override)
+        else:
+            fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
         # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
@@ -102,8 +94,8 @@ def test_pendulum_planning():
         plt.xlabel('$\\theta$')
         plt.ylabel('$\dot{\\theta}$')
         duration += (end_time-start_time)
-        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
-        plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
+        plt.title('Basic RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.savefig('Basic_RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
         # plt.show()
         plt.xlim([-4, 4])
         plt.ylim([-10,10])
@@ -134,5 +126,5 @@ def test_pendulum_planning():
             break
 
 if __name__=='__main__':
-    for i in range(10):
+    for i in range(1):
         test_pendulum_planning()

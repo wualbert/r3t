@@ -92,8 +92,14 @@ class StateTree:
         self.state_idx.insert(state_id, np.concatenate([state,state]))
         self.state_id_to_state[state_id] = state
 
+    def find_nearest(self, state):
+        nearest_box = np.hstack([state, state])
+        state_id = list(self.state_idx.nearest(nearest_box,1))[0]
+        # print('nearest',self.state_id_to_state[state_id])
+        return self.state_id_to_state[state_id]
+
 class BasicRRT:
-    def __init__(self, root_state, sampler, reached_goal_function, plan_collision_free_path, state_tree=StateTree(), rewire_radius = None):
+    def __init__(self, root_state, sampler, reached_goal_function, plan_collision_free_path_towards, state_tree=StateTree(), rewire_radius = None):
         self.root_node = Node(root_state, cost_from_parent=0)
         self.root_id = hash(str(root_state))
         self.state_dim = root_state[0]
@@ -107,7 +113,7 @@ class BasicRRT:
         self.state_to_node_map[self.root_id] = self.root_node
         self.node_tally = 0
         self.rewire_radius=rewire_radius
-        self.plan_collision_free_path=plan_collision_free_path
+        self.plan_collision_free_path_towards=plan_collision_free_path_towards
 
     def create_child_node(self, parent_node, child_state, cost_from_parent, path_from_parent):
         '''
@@ -129,10 +135,10 @@ class BasicRRT:
 
     def extend(self, new_state, nearest_node, explore_deterministic_next_state=False):
         # test for possibility to extend
-        cost_to_go, path = self.plan_collision_free_path(nearest_node.state, new_state)
-        new_node = self.create_child_node(nearest_node, new_state, cost_to_go, path)
-        if path is None:
+        cost_to_go, end_state = self.plan_collision_free_path_towards(nearest_node.state, new_state)
+        if end_state is None:
             return False, None
+        new_node = self.create_child_node(nearest_node, end_state, cost_to_go, end_state)
         return True, new_node
 
     def build_tree_to_goal_state(self, goal_state, allocated_time=20, stop_on_first_reach=False, rewire=False,
@@ -164,21 +170,27 @@ class BasicRRT:
             #sample the state space
             state_sample = self.sampler()
             if not explore_deterministic_next_state:
-                nearest_node = self.StateTree.find_nearest(state_sample)
+                nearest_state = self.state_tree.find_nearest(state_sample)
+                nearest_node = self.state_to_node_map[hash(str(nearest_state))]
                 is_extended, new_node = self.extend(state_sample, nearest_node)
                 if not is_extended: #extension failed
                     print('Warning: extension failed')
                     continue
-                new_state_id = hash(new_node)
-                try:
-                    assert(new_state_id not in self.state_to_node_map)
-                except:
-                    print('State id hash collision!')
-                    print('Original state is ', self.state_to_node_map[new_state_id].state)
-                    print('Attempting to insert', new_node.state)
-                    raise AssertionError
+                new_state_id = hash(str(new_node.state))
+                if new_state_id in self.state_to_node_map:
+                    continue
+                # try:
+                #     assert(new_state_id not in self.state_to_node_map)
+                # except:
+                #     print('State id hash collision!')
+                #     print('Original state is ', self.state_to_node_map[new_state_id].state)
+                #     print('Attempting to insert', new_node.state)
+                #     raise AssertionError
                 self.state_tree.insert(new_state_id, new_node.state)
                 self.state_to_node_map[new_state_id] = new_node
+                #
+                # print('snm', len(self.state_to_node_map))
+                # print(len(self.state_tree.state_id_to_state))
                 self.node_tally = len(self.state_to_node_map)
                 # TODO
                 #rewire the tree
@@ -187,11 +199,12 @@ class BasicRRT:
                 #In "find path" mode, if the goal is in the reachable set, we are done
                 if self.reached_goal(new_node.state, goal_state): #FIXME: support for goal region
                     # add the goal node to the tree
-                    goal_node = self.create_child_node(new_node, goal_state)
+                    is_extended, goal_node = self.extend(goal_state, new_node)
                     # TODO
                     # if rewire:
                     #     self.rewire(goal_node)
-                    self.goal_node=goal_node
+                    if is_extended:
+                        self.goal_node=goal_node
             # TODO
             # else:
             #     is_extended, new_node = self.extend(state_sample, nearest_node, True)

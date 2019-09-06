@@ -101,8 +101,8 @@ def test_hopper_2d_planning():
         rnd = np.random.rand(10)
         rnd[0] = (rnd[0]-.2)*14
         rnd[1] = (rnd[1]-0.4)*10
-        rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/3
-        rnd[3] = (rnd[3]-0.5) * 2 * np.pi/4
+        rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/4
+        rnd[3] = (rnd[3]-0.5) * 2 * np.pi/3
         rnd[4] = (rnd[4]-0.5)*2*5+5
         rnd[5] = (rnd[5]-0.2)*2*10
         rnd[6] = (rnd[6] - 0.5) * 2 * 10
@@ -164,15 +164,13 @@ def test_hopper_2d_planning():
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
-        polytope_reachable_sets = rrt.reachable_set_tree.id_to_reachable_sets.values()
-        reachable_polytopes = []
-        explored_states = []
-        for prs in polytope_reachable_sets:
-            reachable_polytopes.extend(prs.polytope_list)
-            explored_states.append(prs.parent_state)
-        # print(explored_states)
-        # print(len(explored_states))
-        # print('number of nodes',rrt.node_tally)
+        # polytope_reachable_sets = rrt.reachable_set_tree.id_to_reachable_sets.values()
+        # reachable_polytopes = []
+        # explored_states = []
+        # for prs in polytope_reachable_sets:
+        #     reachable_polytopes.extend(prs.polytope_list)
+        #     explored_states.append(prs.parent_state)
+
         fig = plt.figure()
         ax = fig.add_subplot(111)
         fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, dims=[0,1])
@@ -187,7 +185,7 @@ def test_hopper_2d_planning():
         plt.xlabel('$x_0$')
         plt.ylabel('$y_0$')
         duration += (end_time-start_time)
-        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
+        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.state_tree.state_idx.size()))
         plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
 
         # plt.show()
@@ -204,7 +202,7 @@ def test_hopper_2d_planning():
         # ax.set_xlim(left=0)
         plt.xlabel('$y_0$')
         plt.ylabel('$r$')
-        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
+        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
         plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds_2.png' % duration, dpi=500)
 
         # plt.show()
