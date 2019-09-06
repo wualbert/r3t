@@ -123,13 +123,14 @@ class Node:
     def __eq__(self, other):
         return self.__hash__()==other.__hash__()
 
-    def add_children(self, new_hildren_and_paths):
+    def add_children(self, new_children_and_paths):
+        #TODO: deprecated this function
         '''
         adds new children, represented as a set, to the node
         :param new_children:
         :return:
         '''
-        self.children.update(new_hildren_and_paths)
+        self.children.update(new_children_and_paths)
 
     def update_parent(self, new_parent=None, cost_self_from_parent=None, path_self_from_parent=None):
         '''
@@ -379,8 +380,6 @@ class RGRRTStar:
                 # print('%d nodes to add' %len(nodes_to_add))
                 for new_node in nodes_to_add:
                     new_state_id = hash(str(new_node.state))
-                    self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
-                    self.state_tree.insert(new_state_id, new_node.state)
                     try:
                         assert(new_state_id not in self.state_to_node_map)
                     except:
@@ -388,6 +387,8 @@ class RGRRTStar:
                         print('Original state is ', self.state_to_node_map[new_state_id].state)
                         print('Attempting to insert', new_node.state)
                         raise AssertionError
+                    self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
+                    self.state_tree.insert(new_state_id, new_node.state)
                     self.state_to_node_map[new_state_id] = new_node
                     self.node_tally = len(self.state_to_node_map)
                     #rewire the tree

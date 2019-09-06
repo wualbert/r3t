@@ -88,7 +88,7 @@ class Hopper2D_RGRRTStar(SymbolicSystem_RGRRTStar):
         SymbolicSystem_RGRRTStar.__init__(self, sys, sampler, step_size, contains_goal_function, compute_reachable_set)
 
 def test_hopper_2d_planning():
-    initial_state = np.asarray([0.5, 1, 0, 0, 5, 0.5, 0., 0., 0., 0.])
+    initial_state = np.asarray([0.5, 1, 0, 0, 5, 0, 0., 0., 0., 0.])
     hopper_system = Hopper_2d(initial_state=initial_state)
     # [theta1, theta2, x0, y0, w]
     # from x0 = 0 move to x0 = 5
@@ -98,12 +98,12 @@ def test_hopper_2d_planning():
     #TODO
     def uniform_sampler():
         rnd = np.random.rand(10)
-        rnd[0] = (rnd[0]-.1)*10+5
-        rnd[1] = (rnd[1]-0.2)*10
+        rnd[0] = (rnd[0]-.2)*14
+        rnd[1] = (rnd[1]-0.4)*10
         rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/3
         rnd[3] = (rnd[3]-0.5) * 2 * np.pi/4
-        rnd[4] = (rnd[4]-0.5)*2*2.5+3
-        rnd[5] = (rnd[5]-0.2)*2*8
+        rnd[4] = (rnd[4]-0.5)*2*5+5
+        rnd[5] = (rnd[5]-0.2)*2*10
         rnd[6] = (rnd[6] - 0.5) * 2 * 10
         rnd[7] = (rnd[7] - 0.5) * 2 * 4
         rnd[8] = (rnd[8] - 0.5) * 2 * 4
@@ -156,7 +156,7 @@ def test_hopper_2d_planning():
 
     duration = 0
     os.makedirs('RRT_Hopper_2d_'+experiment_name)
-    max_iterations = 100
+    max_iterations = 10000
     for itr in range(max_iterations):
         start_time = time.time()
         if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
