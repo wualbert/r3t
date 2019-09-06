@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer
-from polytope_symbolic_system.examples.hopper_2d import Hopper_2d
 from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar, PolytopeReachableSet
-from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
-from pypolycontain.lib.polytope import polytope
-from pypolycontain.lib.operations import distance_point_polytope, distance_polytopes
+from rg_rrt_star.symbolic_system.examples.hopper_2D_visualize import hopper_plot
 from rg_rrt_star.utils.visualization import visualize_node_tree_2D
+from polytope_symbolic_system.examples.hopper_2d import Hopper_2d
+from pypolycontain.lib.polytope import polytope
+from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
+from pypolycontain.lib.operations import distance_point_polytope, distance_polytopes
 from collections import deque
 import time
 from datetime import datetime
@@ -159,7 +160,7 @@ def test_hopper_2d_planning():
     max_iterations = 10000
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 60, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -222,11 +223,32 @@ def test_hopper_2d_planning():
         plt.ylabel('$r$')
         plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
         plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds_3.png' % duration, dpi=500)
-
-
-        # plt.show()
         plt.clf()
         plt.close()
+
+        # save hopper animation
+        os.makedirs('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds' % duration)
+        # find state closest to goal
+        nearest_box = np.hstack([goal_state[0:5], np.ones(5)*-1000, goal_state[0:5], np.ones(5)*1000])
+        closest_state_to_goal = list(rrt.state_tree.state_idx.nearest(nearest_box,1))[0]
+        node_to_plot = rrt.state_to_node_map[closest_state_to_goal]
+        states_to_plot = []
+        while(1):
+            states_to_plot.append(node_to_plot.state)
+            if node_to_plot.parent is None:
+                break
+            else:
+                node_to_plot = node_to_plot.parent
+        states_to_plot.reverse()
+        for index, s in enumerate(states_to_plot):
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            hopper_plot(s, ax, fig)
+            plt.savefig('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds/%i' % (duration, index), dpi=500)
+            plt.clf()
+            plt.close()
+
+        # plt.show()
         if found_goal:
             break
 

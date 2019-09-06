@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 
 def hopper_plot(X,ax,fig):
-    x,y,r,theta,phi=X[0:5]
+    x,y,theta,phi,r=X[0:5]
     w_1=0.2
     w_2=0.2
     h=0.2

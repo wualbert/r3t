@@ -8,7 +8,11 @@ class SymbolicSystem_Basic_RRT(BasicRRT):
         self.reached_goal_function=reached_goal_function
         def plan_collision_free_path(nearest_state, new_state):
             # sample the control space
-            possible_inputs =
+            # TODO: support higher dimensions
+            print(sys.input_limits[0,:])
+            possible_inputs = np.linpace(*sys.input_limits[0,:], num=50)
+            best_input = None
+            for input in possible_inputs:
 
             # forward simulate with control space samples
             new_env = self.sys._state_to_env(nearest_state, u)
