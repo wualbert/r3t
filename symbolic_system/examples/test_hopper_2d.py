@@ -94,7 +94,7 @@ def test_hopper_2d_planning():
     # from x0 = 0 move to x0 = 5
     goal_state = np.asarray([5.,0.,0.,0.,5.,0.,0.,0.,0.,0.])
     goal_tolerance = [0.1,10,10,10,10,5,5,5,5,5]
-    step_size = 1e-2
+    step_size = 1e-1
     #TODO
     def uniform_sampler():
         rnd = np.random.rand(10)
