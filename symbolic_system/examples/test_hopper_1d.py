@@ -15,9 +15,9 @@ def test_hopper_1d_planning():
     l = 1
     p = 0.1
     step_size = 0.04
-    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=20)
+    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=25)
     goal_state = np.asarray([3,0.0])
-    goal_tolerance = 4e-2
+    goal_tolerance = 2e-2
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = rnd[0]*2
@@ -29,9 +29,9 @@ def test_hopper_1d_planning():
 
     def gaussian_mixture_sampler():
         gaussian_ratio = 0.4
-        rnd = np.random.rand(2)
-        rnd[0] = np.random.normal(l+0.5*p,2*p)
-        rnd[1] = (np.random.rand(1)-0.5)*2*4
+        rnd = np.zeros(2)
+        rnd[0] = np.random.normal(l+0.5*p,3*p)
+        rnd[1] = (np.random.rand(1)-0.5)*2*8
         if np.random.rand(1) > gaussian_ratio:
             return uniform_sampler()
         return rnd
@@ -53,6 +53,13 @@ def test_hopper_1d_planning():
                 rnd[1] = np.random.normal(goal_state[1],1.5)
                 return rnd
             return rnd
+
+    # def contains_goal_function(reachable_set, goal_state):
+    #     distance = np.linalg.norm(reachable_set.parent_state-goal_state)
+    #     if distance<goal_tolerance:
+    #         print(distance, goal_tolerance)
+    #         return True
+    #     return False
 
     def contains_goal_function(reachable_set, goal_state):
         distance = np.inf
