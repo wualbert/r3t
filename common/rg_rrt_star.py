@@ -306,33 +306,28 @@ class RGRRTStar:
                 nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1))  # FIXME: necessary to cast to list?
                 discard = True
 
-                for i, nearest_state_id in enumerate(nearest_state_id_list):
-                    nearest_node = self.state_to_node_map[nearest_state_id]
-                    # find the closest state in the reachable set and use it to extend the tree
-                    new_state, discard = nearest_node.reachable_set.find_closest_state(random_sample)
-                    # print(new_state,discard)
-                    new_state_id = hash(str(new_state))
-                    # add the new node to the set tree if the new node is not already in the tree
-                    if new_state_id in self.state_to_node_map:
-                        # FIXME: how to prevent repeated state exploration?
-                        # print('Warning: state already explored')
-                        discard = True
-                        continue  # #sanity check to prevent numerical errors
-                    if not explore_deterministic_next_state:
-                        is_extended, new_node = self.extend(new_state, nearest_node)
-                    else:
-                        is_extended, new_node = self.extend(new_state, nearest_node, True)
-                    if not is_extended:
-                        discard=True
-                    if not discard:
-                        break
-                if discard:  # No state in the reachable set is better the the nearest state
-                    # print('Warning: discarding state')
+                nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
+                # find the closest state in the reachable set and use it to extend the tree
+                new_state, discard = nearest_node.reachable_set.find_closest_state(random_sample)
+                # print(new_state,discard)
+                new_state_id = hash(str(new_state))
+                # add the new node to the set tree if the new node is not already in the tree
+                if new_state_id in self.state_to_node_map:
+                    # FIXME: how to prevent repeated state exploration?
+                    # print('Warning: state already explored')
+                    continue  # #sanity check to prevent numerical errors
+                if not explore_deterministic_next_state:
+                    is_extended, new_node = self.extend(new_state, nearest_node)
+                else:
+                    is_extended, new_node = self.extend(new_state, nearest_node, True)
+                if not is_extended:
+                    # print('Extension failed')
                     continue
+
                 else:
                     sample_is_valid = True
                 #FIXME: potential infinite loop
-
+            print('sample count', sample_count)
             if not explore_deterministic_next_state:
                 self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
                 self.state_tree.insert(new_state_id, new_node.state)

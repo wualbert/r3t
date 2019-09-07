@@ -18,7 +18,7 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
         PolytopeReachableSet.__init__(self, parent_state, polytope_list, epsilon, contains_goal_function, deterministic_next_state)
         self.ground_height_function = ground_height_function
         self.body_attitude_limit = np.pi/6
-        self.leg_attitude_limit = np.pi/6
+        self.leg_attitude_limit = np.pi/4
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
         #fixme: support collision checking
         #check for impossible configurations
@@ -33,15 +33,15 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
 
         # body attitude is off
         if goal_state[3]+goal_state[8]*2e-2>self.body_attitude_limit or goal_state[3]+goal_state[8]*2e-2<-self.body_attitude_limit:
-            # print('body attitude off')
+            print('body attitude off')
             if return_deterministic_next_state:
                 return np.inf, None, None
             else:
                 return np.inf, None
 
         # stuck in the ground
-        if goal_state[1]<self.ground_height_function(goal_state[0])-.8:
-            # print('stuck in ground')
+        if goal_state[1]<self.ground_height_function(goal_state[0])-3 or goal_state[1]>self.ground_height_function(goal_state[0])+8:
+            print('invalid height')
             if return_deterministic_next_state:
                 return np.inf, None, None
             else:
@@ -131,13 +131,13 @@ def test_hopper_2d_planning():
     #TODO
     def uniform_sampler():
         rnd = np.random.rand(10)
-        rnd[0] = (rnd[0]-.2)*14
-        rnd[1] = (rnd[1]-0.4)*10
-        rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/4
-        rnd[3] = (rnd[3]-0.5) * 2 * np.pi/3
-        rnd[4] = (rnd[4]-0.5)*2*5+5
-        rnd[5] = (rnd[5]-0.2)*2*10
-        rnd[6] = (rnd[6] - 0.5) * 2 * 10
+        rnd[0] = (rnd[0]-.5)*14
+        rnd[1] = (rnd[1]-0.5)*10
+        rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/2
+        rnd[3] = (rnd[3]-0.5) * 2 * np.pi/2
+        rnd[4] = (rnd[4]-0.5)*2*4+5
+        rnd[5] = (rnd[5]-0.5)*2*10
+        rnd[6] = (rnd[5]-0.7)*2*10 #np.random.normal(0, 6)
         rnd[7] = (rnd[7] - 0.5) * 2 * 4
         rnd[8] = (rnd[8] - 0.5) * 2 * 4
         rnd[9] = (rnd[9] - 0.1) * 2 * 20
@@ -192,7 +192,7 @@ def test_hopper_2d_planning():
     max_iterations = 10000
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 60, rewire=True, explore_deterministic_next_state=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 10, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
