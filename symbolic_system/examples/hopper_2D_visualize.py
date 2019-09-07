@@ -16,13 +16,14 @@ from matplotlib.collections import PatchCollection
 import matplotlib.pyplot as plt
 
 
-def hopper_plot(X,ax,fig):
+def hopper_plot(X,fig,ax, scaling_factor=0.1, alpha=0.5):
     x,y,theta,phi,r=X[0:5]
-    w_1=0.2
-    w_2=0.2
-    h=0.2
-    L=5
-    a=3
+    w_1=0.2*scaling_factor
+    w_2=0.2*scaling_factor
+    h=0.2*scaling_factor
+    L=8*scaling_factor
+    a=3*scaling_factor
+    alpha = alpha
     R=np.array([[np.cos(theta),-np.sin(theta)],[np.sin(theta),np.cos(theta)]])
     # Good now plot
     ax.set_xlabel("x",fontsize=20)
@@ -38,9 +39,9 @@ def hopper_plot(X,ax,fig):
     up_right=np.array([x,y])+np.dot(R,[w_1,h])+np.dot(R,[w_1/2,L])
     leg=[patches.Polygon(np.array([[corner[0],down_right[0],up_right[0],up_left[0],down_left[0]],\
                                    [corner[1],down_right[1],up_right[1],up_left[1],down_left[1]]]).reshape(2,5).T, True)]
-    ax.add_collection(PatchCollection(leg,color=(0.8,0.3,0.4),alpha=0.8,edgecolor=(0,0,0)))
+    ax.add_collection(PatchCollection(leg,color=(0.8,0.3,0.4),alpha=alpha,edgecolor=None))
     # Body
-    center=np.array([x,y])+np.dot(R,[0,r])
+    center=np.array([x,y])+np.dot(R,[0,r*scaling_factor])
     R=np.array([[np.cos(phi),-np.sin(phi)],[np.sin(phi),np.cos(phi)]])
     up_right,up_left,down_left,down_right=center+np.dot(R,[a,w_2]),\
                                             center+np.dot(R,[-a,w_2]),\
@@ -48,14 +49,15 @@ def hopper_plot(X,ax,fig):
                                             center+np.dot(R,[a,-w_2])
     body=[patches.Polygon(np.array([[up_right[0],up_left[0],down_left[0],down_right[0]],\
                                     [up_right[1],up_left[1],down_left[1],down_right[1]]]).reshape(2,4).T, True)]
-    ax.add_collection(PatchCollection(body,color=(0.2,0.2,0.8),alpha=0.8,edgecolor=(0,0,0)))
-    ax.plot([-10,10],[0,0],'-',linewidth=3,markersize=10)
+    ax.add_collection(PatchCollection(body,color=(0.2,0.2,0.8),alpha=alpha,edgecolor=None))
     ax.grid(color=(0,0,0), linestyle='--', linewidth=0.5)
+    return fig, ax
 
-fig,ax = plt.subplots()
-fig.set_size_inches(10, 10)
-X=[0,0.2,3.5,0.2,0.5]
-hopper_plot(X,ax,fig)       
+if __name__ == '__main()':
+    fig,ax = plt.subplots()
+    fig.set_size_inches(10, 10)
+    X=[0,0.2,3.5,0.2,0.5]
+    hopper_plot(X,ax,fig)
 #def generate_figures():    
 #    for t in range(T+1):
 #        fig,ax = plt.subplots()

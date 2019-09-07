@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer
-from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar, PolytopeReachableSet
+from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import *
 from rg_rrt_star.symbolic_system.examples.hopper_2D_visualize import hopper_plot
-from rg_rrt_star.utils.visualization import visualize_node_tree_2D
+from rg_rrt_star.utils.visualization import visualize_node_tree_hopper_2D, visualize_node_tree_2D
 from polytope_symbolic_system.examples.hopper_2d import Hopper_2d
 from pypolycontain.lib.polytope import polytope
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
@@ -17,21 +17,23 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
     def __init__(self, parent_state, polytope_list, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, ground_height_function = lambda x:0):
         PolytopeReachableSet.__init__(self, parent_state, polytope_list, epsilon, contains_goal_function, deterministic_next_state)
         self.ground_height_function = ground_height_function
+        self.body_attitude_limit = np.pi/6
+        self.leg_attitude_limit = np.pi/6
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
         #fixme: support collision checking
         #check for impossible configurations
 
         # tipped over
-        if goal_state[2]>np.pi/4 or goal_state[2]<-np.pi/4:
-            print('leg tipped over')
+        if goal_state[2]+goal_state[7]*2e-2>self.leg_attitude_limit or goal_state[2]+goal_state[7]*2e-2<-self.leg_attitude_limit:
+            # print('leg tipped over')
             if return_deterministic_next_state:
                 return np.inf, None, None
             else:
                 return np.inf, None
 
         # body attitude is off
-        if goal_state[3]>np.pi/4 or goal_state[3]<-np.pi/4:
-            print('body attitude off')
+        if goal_state[3]+goal_state[8]*2e-2>self.body_attitude_limit or goal_state[3]+goal_state[8]*2e-2<-self.body_attitude_limit:
+            # print('body attitude off')
             if return_deterministic_next_state:
                 return np.inf, None, None
             else:
@@ -39,14 +41,14 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
 
         # stuck in the ground
         if goal_state[1]<self.ground_height_function(goal_state[0])-.8:
-            print('stuck in ground')
+            # print('stuck in ground')
             if return_deterministic_next_state:
                 return np.inf, None, None
             else:
                 return np.inf, None
 
         # stuck in the ground
-        if goal_state[4]<0.2:
+        if goal_state[4]+goal_state[9]*2e-2<0.2:
             print('r invalid')
             if return_deterministic_next_state:
                 return np.inf, None, None
@@ -63,6 +65,36 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
             return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
         return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state]), self.deterministic_next_state
 
+    # def find_closest_state(self, query_point):
+    #     '''
+    #     Find the closest state from the query point to a given polytope
+    #     :param query_point:
+    #     :return: Tuple (closest_point, closest_point_is_self.state)
+    #     '''
+    #     distance = np.inf
+    #     closest_point = None
+    #     try:
+    #         #use AABB to upper bound distance
+    #         min_dmax = np.inf
+    #         for i, aabb in enumerate(self.aabb_list):
+    #             dmax = point_to_box_dmax(query_point, aabb)
+    #             if dmax < min_dmax:
+    #                 min_dmax = dmax
+    #
+    #         for i, p in enumerate(self.polytope_list):
+    #             #ignore polytopes that are impossible
+    #             if point_to_box_distance(query_point, self.aabb_list[i]) > min_dmax:
+    #                 continue
+    #             d, proj = distance_point(p, query_point)
+    #             if d<distance:
+    #                 distance = d
+    #                 closest_point = proj
+    #         assert closest_point is not None
+    #     except TypeError:
+    #         closest_point = distance_point(self.polytope_list, query_point)[1]
+    #     closest_point = np.ndarray.flatten(closest_point)
+    #     return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
+
 class Hopper2D_RGRRTStar(SymbolicSystem_RGRRTStar):
     def __init__(self, sys, sampler, step_size, contains_goal_function = None):
         self.sys = sys
@@ -72,7 +104,7 @@ class Hopper2D_RGRRTStar(SymbolicSystem_RGRRTStar):
             '''
             Compute zonotopic reachable set using the system
             :param h:
-            :return:
+            :return:a
             '''
             deterministic_next_state = None
             reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size)
@@ -173,7 +205,7 @@ def test_hopper_2d_planning():
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, dims=[0,1])
+        fig, ax = visualize_node_tree_hopper_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, dims=[0,1])
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
         ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
@@ -185,7 +217,7 @@ def test_hopper_2d_planning():
         plt.xlabel('$x_0$')
         plt.ylabel('$y_0$')
         duration += (end_time-start_time)
-        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.state_tree.state_idx.size()))
+        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
         plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
 
         # plt.show()
@@ -219,32 +251,32 @@ def test_hopper_2d_planning():
         # ax.set_xlim(left=0)
         plt.xlabel('$x_0$')
         plt.ylabel('$r$')
-        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
+        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
         plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds_3.png' % duration, dpi=500)
         plt.clf()
         plt.close()
 
-        # save hopper animation
-        os.makedirs('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds' % duration)
-        # find state closest to goal
-        nearest_box = np.hstack([goal_state[0:5], np.ones(5)*-1000, goal_state[0:5], np.ones(5)*1000])
-        closest_state_to_goal = list(rrt.state_tree.state_idx.nearest(nearest_box,1))[0]
-        node_to_plot = rrt.state_to_node_map[closest_state_to_goal]
-        states_to_plot = []
-        while(1):
-            states_to_plot.append(node_to_plot.state)
-            if node_to_plot.parent is None:
-                break
-            else:
-                node_to_plot = node_to_plot.parent
-        states_to_plot.reverse()
-        for index, s in enumerate(states_to_plot):
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            hopper_plot(s, ax, fig)
-            plt.savefig('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds/%i' % (duration, index), dpi=500)
-            plt.clf()
-            plt.close()
+        # # save hopper animation
+        # os.makedirs('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds' % duration)
+        # # find state closest to goal
+        # nearest_box = np.hstack([goal_state[0:5], np.ones(5)*-1000, goal_state[0:5], np.ones(5)*1000])
+        # closest_state_to_goal = list(rrt.state_tree.state_idx.nearest(nearest_box,1))[0]
+        # node_to_plot = rrt.state_to_node_map[closest_state_to_goal]
+        # states_to_plot = []
+        # while(1):
+        #     states_to_plot.append(node_to_plot.state)
+        #     if node_to_plot.parent is None:
+        #         break
+        #     else:
+        #         node_to_plot = node_to_plot.parent
+        # states_to_plot.reverse()
+        # for index, s in enumerate(states_to_plot):
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(111)
+        #     hopper_plot(s, ax, fig)
+        #     plt.savefig('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds/%i' % (duration, index), dpi=500)
+        #     plt.clf()
+        #     plt.close()
 
         # plt.show()
         if found_goal:
