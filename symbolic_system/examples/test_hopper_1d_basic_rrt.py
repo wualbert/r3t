@@ -122,7 +122,7 @@ def test_hopper_1d_planning():
         # ax.set_aspect('equal')
         plt.plot([l+p, l+p], [-7,7], 'm--', lw=1.5)
         plt.plot([l, l], [-7,7], 'b--', lw=1.5)
-
+        plt.xlim([0.5,4])
         # ax.set_xlim(left=0)
         plt.xlabel('$x$')
         plt.ylabel('$\dot{x}$')

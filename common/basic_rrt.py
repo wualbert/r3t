@@ -346,39 +346,38 @@ class RGRRT(BasicRRT):
 
             #sample the state space
             state_sample = self.sampler()
-            if not explore_deterministic_next_state:
-                nearest_reachable_state = self.reachable_set_tree.find_nearest(state_sample)
-                nearest_node = self.reachabe_state_to_node_map[hash(str(nearest_reachable_state))]
-                new_state_id = hash(str(nearest_reachable_state))
-                if new_state_id in self.state_to_node_map:
-                    continue
-                is_extended, new_node = self.force_extend(nearest_reachable_state, nearest_node)
-                if not is_extended: #extension failed
-                    print('Warning: extension failed')
-                    continue
-                # try:
-                #     assert(new_state_id not in self.state_to_node_map)
-                # except:
-                #     print('State id hash collision!')
-                #     print('Original state is ', self.state_to_node_map[new_state_id].state)
-                #     print('Attempting to insert', new_node.state)
-                #     raise AssertionError
-                self.state_tree.insert(new_state_id, new_node.state)
-                self.state_to_node_map[new_state_id] = new_node
+            nearest_reachable_state = self.reachable_set_tree.find_nearest(state_sample)
+            nearest_node = self.reachabe_state_to_node_map[hash(str(nearest_reachable_state))]
+            new_state_id = hash(str(nearest_reachable_state))
+            if new_state_id in self.state_to_node_map:
+                continue
+            is_extended, new_node = self.force_extend(nearest_reachable_state, nearest_node)
+            if not is_extended: #extension failed
+                print('Warning: extension failed')
+                continue
+            # try:
+            #     assert(new_state_id not in self.state_to_node_map)
+            # except:
+            #     print('State id hash collision!')
+            #     print('Original state is ', self.state_to_node_map[new_state_id].state)
+            #     print('Attempting to insert', new_node.state)
+            #     raise AssertionError
+            self.state_tree.insert(new_state_id, new_node.state)
+            self.state_to_node_map[new_state_id] = new_node
 
-                # print('snm', len(self.state_to_node_map))
-                # print(len(self.state_tree.state_id_to_state))
-                self.node_tally = len(self.state_to_node_map)
+            # print('snm', len(self.state_to_node_map))
+            # print(len(self.state_tree.state_id_to_state))
+            self.node_tally = len(self.state_to_node_map)
+            # TODO
+            #rewire the tree
+            # if rewire:
+            #     self.rewire(new_node)
+            #In "find path" mode, if the goal is in the reachable set, we are done
+            if self.reached_goal(new_node.state, goal_state): #FIXME: support for goal region
+                # add the goal node to the tree
+                is_extended, goal_node = self.extend(goal_state, new_node)
                 # TODO
-                #rewire the tree
                 # if rewire:
-                #     self.rewire(new_node)
-                #In "find path" mode, if the goal is in the reachable set, we are done
-                if self.reached_goal(new_node.state, goal_state): #FIXME: support for goal region
-                    # add the goal node to the tree
-                    is_extended, goal_node = self.extend(goal_state, new_node)
-                    # TODO
-                    # if rewire:
-                    #     self.rewire(goal_node)
-                    if is_extended:
-                        self.goal_node=goal_node
+                #     self.rewire(goal_node)
+                if is_extended:
+                    self.goal_node=goal_node
