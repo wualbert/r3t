@@ -40,7 +40,7 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
                 return np.inf, None
 
         # stuck in the ground
-        if goal_state[1]<self.ground_height_function(goal_state[0])-3 or goal_state[1]>self.ground_height_function(goal_state[0])+8:
+        if goal_state[1]<self.ground_height_function(goal_state[0])-1 or goal_state[1]>self.ground_height_function(goal_state[0])+8:
             # print('invalid height')
             if return_deterministic_next_state:
                 return np.inf, None, None
@@ -121,28 +121,51 @@ class Hopper2D_RGRRTStar(SymbolicSystem_RGRRTStar):
         SymbolicSystem_RGRRTStar.__init__(self, sys, sampler, step_size, contains_goal_function, compute_reachable_set)
 
 def test_hopper_2d_planning():
-    initial_state = np.asarray([0.5, 1, 0, 0, 5, 0, 0., 0., 0., 0.])
+    initial_state = np.asarray([0., 0.5, -0.1, 0, 5, 0., 0., 0., 0., 0.])
     hopper_system = Hopper_2d(initial_state=initial_state)
     # [theta1, theta2, x0, y0, w]
     # from x0 = 0 move to x0 = 5
     goal_state = np.asarray([5.,0.,0.,0.,5.,0.,0.,0.,0.,0.])
-    goal_tolerance = [0.1,10,10,10,10,5,5,5,5,5]
+    goal_tolerance = [0.1,10,np.pi/4,np.pi/4,10,100,100,100,100,100]
     step_size = 1e-1
     #TODO
     def uniform_sampler():
         rnd = np.random.rand(10)
-        rnd[0] = (rnd[0]-.5)*14
-        rnd[1] = (rnd[1]-0.5)*10
-        rnd[2] = (rnd[2] - 0.5) * 2 * np.pi/8
-        rnd[3] = (rnd[3]-0.5) * 2 * np.pi/8
+        rnd[0] = rnd[0]*10-0.5
+        rnd[1] = (rnd[1]-0.5)*10+3
+        rnd[2] = np.random.normal(0, np.pi/12)
+        rnd[3] = np.random.normal(0, np.pi/16)
         rnd[4] = (rnd[4]-0.5)*2*4+5
-        rnd[5] = (rnd[5]-0.5)*2*10
+        rnd[5] = (rnd[5]-0.5)*2*3
         rnd[6] = (rnd[5]-0.5)*2*10 #np.random.normal(0, 6)
-        rnd[7] = (rnd[7] - 0.5) * 2 * 0.5
-        rnd[8] = (rnd[8] - 0.5) * 2 * 0.5
+        rnd[7] = np.random.normal(0, 2)
+        rnd[8] = np.random.normal(0, 2)
         rnd[9] = (rnd[9] - 0.1) * 2 * 20
         # goal_bias = np.random.rand(1)
         return rnd
+
+    def hip_coordinates_sampler():
+        # [x_hip, y_hip, theta(leg), phi(body), r]
+        rnd = np.random.rand(10)
+        rnd[0] = rnd[0] * 10 - 0.5
+        rnd[1] = (rnd[1] - 0.5) * 2 * 4 + 5
+        rnd[2] = np.random.normal(0, np.pi / 12)
+        rnd[3] = np.random.normal(0, np.pi / 16)
+        rnd[4] = (rnd[4] - 0.5) * 2 * 4 + 5
+        rnd[5] = (rnd[5] - 0.5) * 2 * 3
+        rnd[6] = (rnd[5] - 0.5) * 2 * 10  # np.random.normal(0, 6)
+        rnd[7] = np.random.normal(0, 2)
+        rnd[8] = np.random.normal(0, 2)
+        rnd[9] = (rnd[9] - 0.1) * 2 * 20
+        # convert to hopper foot coordinates
+        rnd_ft = np.zeros(10)
+        rnd_ft[0] = rnd[0]+np.sin(rnd[2])*rnd[4]
+        rnd_ft[1] = rnd[0]-np.cos(rnd[2])*rnd[4]
+        rnd_ft[2:5] = rnd[2:5]
+        rnd_ft[5] = rnd[5]+rnd[9]*np.sin(rnd[2])+rnd[4]*np.cos(rnd[2])*rnd[7]
+        rnd_ft[6] = rnd[6]-rnd[9]*np.cos(rnd[2])+rnd[4]*np.sin(rnd[2])*rnd[7]
+        rnd_ft[7:] = rnd[7:]
+        return rnd_ft
 
     # def gaussian_mixture_sampler():
     #     gaussian_ratio = 0.4
@@ -183,7 +206,7 @@ def test_hopper_2d_planning():
             return True
         return False
 
-    rrt = Hopper2D_RGRRTStar(hopper_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = Hopper2D_RGRRTStar(hopper_system, hip_coordinates_sampler, step_size, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 

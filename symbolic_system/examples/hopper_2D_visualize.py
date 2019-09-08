@@ -29,7 +29,7 @@ def hopper_plot(X,fig,ax, scaling_factor=0.1, alpha=0.5):
     ax.set_xlabel("x",fontsize=20)
     ax.set_ylabel("y",fontsize=20)
     # ax.set_xlim([-5,10])
-    ax.set_ylim([-5,10])
+    ax.set_ylim([-3,5])
     fig.gca().set_aspect('equal')
     # leg
     corner=np.array([x,y])
