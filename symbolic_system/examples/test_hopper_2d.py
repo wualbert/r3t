@@ -137,7 +137,7 @@ def test_hopper_2d_planning():
         rnd[3] = (rnd[3]-0.5) * 2 * np.pi/8
         rnd[4] = (rnd[4]-0.5)*2*4+5
         rnd[5] = (rnd[5]-0.5)*2*10
-        rnd[6] = (rnd[5]-0.7)*2*10 #np.random.normal(0, 6)
+        rnd[6] = (rnd[5]-0.5)*2*10 #np.random.normal(0, 6)
         rnd[7] = (rnd[7] - 0.5) * 2 * 0.5
         rnd[8] = (rnd[8] - 0.5) * 2 * 0.5
         rnd[9] = (rnd[9] - 0.1) * 2 * 20
@@ -192,7 +192,7 @@ def test_hopper_2d_planning():
     max_iterations = 10000
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 60, rewire=True, explore_deterministic_next_state=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
