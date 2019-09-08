@@ -21,7 +21,7 @@ def hopper_plot(X,fig,ax, scaling_factor=0.1, alpha=0.5):
     w_1=0.2*scaling_factor
     w_2=0.2*scaling_factor
     h=0.2*scaling_factor
-    L=8*scaling_factor
+    L=5*scaling_factor
     a=3*scaling_factor
     alpha = alpha
     R=np.array([[np.cos(theta),-np.sin(theta)],[np.sin(theta),np.cos(theta)]])
