@@ -327,7 +327,7 @@ class RGRRTStar:
                 else:
                     sample_is_valid = True
                 #FIXME: potential infinite loop
-            print('sample count', sample_count)
+            # print('sample count', sample_count)
             if not explore_deterministic_next_state:
                 self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
                 self.state_tree.insert(new_state_id, new_node.state)
