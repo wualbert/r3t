@@ -159,11 +159,11 @@ def test_hopper_2d_planning():
         rnd[9] = (rnd[9] - 0.5) * 2 * 5 + 3 #np.random.normal(2, 12)
         # convert to hopper foot coordinates
         rnd_ft = np.zeros(10)
-        rnd_ft[0] = rnd[0]+np.sin(rnd[2])*rnd[4]
-        rnd_ft[1] = rnd[0]-np.cos(rnd[2])*rnd[4]
+        rnd_ft[0] = rnd[0]-np.sin(rnd[2])*rnd[4]
+        rnd_ft[1] = rnd[0]+np.cos(rnd[2])*rnd[4]
         rnd_ft[2:5] = rnd[2:5]
-        rnd_ft[5] = rnd[5]+rnd[9]*np.sin(rnd[2])+rnd[4]*np.cos(rnd[2])*rnd[7]
-        rnd_ft[6] = rnd[6]-rnd[9]*np.cos(rnd[2])+rnd[4]*np.sin(rnd[2])*rnd[7]
+        rnd_ft[5] = rnd[5]-rnd[9]*np.sin(rnd[2])-rnd[4]*np.cos(rnd[2])*rnd[7]
+        rnd_ft[6] = rnd[6]+rnd[9]*np.cos(rnd[2])+rnd[4]*np.sin(rnd[2])*rnd[7]
         rnd_ft[7:] = rnd[7:]
         return rnd_ft
 
