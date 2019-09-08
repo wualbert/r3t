@@ -244,7 +244,7 @@ def test_hopper_2d_planning():
     max_iterations = 10000
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 60, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
