@@ -18,7 +18,7 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
         PolytopeReachableSet.__init__(self, parent_state, polytope_list, epsilon, contains_goal_function, deterministic_next_state)
         self.ground_height_function = ground_height_function
         self.body_attitude_limit = np.pi/4
-        self.leg_attitude_limit = np.pi/2
+        self.leg_attitude_limit = np.pi/4
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
         #fixme: support collision checking
         #check for impossible configurations
@@ -31,13 +31,13 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
             else:
                 return np.inf, None
 
-        # body attitude is off
-        if goal_state[3]+goal_state[8]*2e-2>self.body_attitude_limit or goal_state[3]+goal_state[8]*2e-2<-self.body_attitude_limit:
-            # print('body attitude off')
-            if return_deterministic_next_state:
-                return np.inf, None, None
-            else:
-                return np.inf, None
+        # # body attitude is off
+        # if goal_state[3]+goal_state[8]*2e-2>self.body_attitude_limit or goal_state[3]+goal_state[8]*2e-2<-self.body_attitude_limit:
+        #     # print('body attitude off')
+        #     if return_deterministic_next_state:
+        #         return np.inf, None, None
+        #     else:
+        #         return np.inf, None
 
         # stuck in the ground
         if goal_state[1]<self.ground_height_function(goal_state[0])-1 or goal_state[1]>self.ground_height_function(goal_state[0])+8:
@@ -149,21 +149,21 @@ def test_hopper_2d_planning():
         rnd = np.random.rand(10)
         rnd[0] = rnd[0] * 10 - 3
         rnd[1] = (rnd[1] - 0.5) * 2 * 2 + 4
-        rnd[2] = (np.random.rand(1)-0.5)*2*np.pi/6#np.random.normal(0, np.pi / 12)
+        rnd[2] = np.random.normal(0, np.pi / 12) # (np.random.rand(1)-0.5)*2*np.pi/12
         rnd[3] = np.random.normal(0, np.pi / 10)#np.random.normal(0, np.pi / 16)
         rnd[4] = (rnd[4] - 0.5) * 2 * 2 + 4
-        rnd[5] = np.random.normal(1, 8) #(rnd[5] - 0.5) * 2 * 6
+        rnd[5] = np.random.normal(0.2, 2) #(rnd[5] - 0.5) * 2 * 6
         rnd[6] = (rnd[5] - 0.5) * 2 * 10 # np.random.normal(0, 6)
-        rnd[7] = np.random.normal(0, 1) # (np.random.rand(1)-0.5)*2*20
-        rnd[8] = np.random.normal(0, 4) # (np.random.rand(1)-0.5)*2*5
+        rnd[7] = np.random.normal(0, 2) # (np.random.rand(1)-0.5)*2*20
+        rnd[8] = np.random.normal(0, 0.05) # (np.random.rand(1)-0.5)*2*5
         rnd[9] = (rnd[9] - 0.5) * 2 * 5 + 3 #np.random.normal(2, 12)
         # convert to hopper foot coordinates
         rnd_ft = np.zeros(10)
         rnd_ft[0] = rnd[0]-np.sin(rnd[2])*rnd[4]
-        rnd_ft[1] = rnd[0]+np.cos(rnd[2])*rnd[4]
+        rnd_ft[1] = rnd[0]-np.cos(rnd[2])*rnd[4]
         rnd_ft[2:5] = rnd[2:5]
         rnd_ft[5] = rnd[5]-rnd[9]*np.sin(rnd[2])-rnd[4]*np.cos(rnd[2])*rnd[7]
-        rnd_ft[6] = rnd[6]+rnd[9]*np.cos(rnd[2])+rnd[4]*np.sin(rnd[2])*rnd[7]
+        rnd_ft[6] = rnd[6]-rnd[9]*np.cos(rnd[2])+rnd[4]*np.sin(rnd[2])*rnd[7]
         rnd_ft[7:] = rnd[7:]
         return rnd_ft
 
