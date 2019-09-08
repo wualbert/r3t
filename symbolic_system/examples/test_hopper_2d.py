@@ -18,7 +18,7 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
         PolytopeReachableSet.__init__(self, parent_state, polytope_list, epsilon, contains_goal_function, deterministic_next_state)
         self.ground_height_function = ground_height_function
         self.body_attitude_limit = np.pi/4
-        self.leg_attitude_limit = np.pi/4
+        self.leg_attitude_limit = np.pi/3
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
         #fixme: support collision checking
         #check for impossible configurations
@@ -143,29 +143,57 @@ def test_hopper_2d_planning():
         rnd[9] = (rnd[9] - 0.1) * 2 * 20
         # goal_bias = np.random.rand(1)
         return rnd
-
+    def contact_sampler():
+        rnd = np.random.rand(10)
+        rnd[0] = rnd[0]*10-0.5
+        rnd[1] = np.random.normal(-0.5,0.2)
+        rnd[2] = np.random.normal(0, np.pi/6)
+        rnd[3] = np.random.normal(0, np.pi/16)
+        rnd[4] = (rnd[4]-0.5)*2*4+5
+        rnd[5] = (rnd[5]-0.5)*2*3
+        rnd[6] = (rnd[5]-0.5)*2*8 + 3#np.random.normal(0, 6)
+        rnd[7] = np.random.normal(0, 30)
+        rnd[8] = np.random.normal(0, 2)
+        rnd[9] = (rnd[9] - 0.1) * 2 * 20
+        # goal_bias = np.random.rand(1)
+        return rnd
     def hip_coordinates_sampler():
         # [x_hip, y_hip, theta(leg), phi(body), r]
+        # if np.random.rand(1)<0.5:
+        #     return uniform_sampler()
         rnd = np.random.rand(10)
         rnd[0] = rnd[0] * 10 - 3
-        rnd[1] = (rnd[1] - 0.5) * 2 * 2 + 4
+        rnd[1] = (rnd[1] - 0.5) * 2 * 2.5 + 4
         rnd[2] = np.random.normal(0, np.pi / 12) # (np.random.rand(1)-0.5)*2*np.pi/12
         rnd[3] = np.random.normal(0, np.pi / 10)#np.random.normal(0, np.pi / 16)
         rnd[4] = (rnd[4] - 0.5) * 2 * 2 + 4
-        rnd[5] = np.random.normal(0.2, 2) #(rnd[5] - 0.5) * 2 * 6
-        rnd[6] = (rnd[5] - 0.5) * 2 * 10 # np.random.normal(0, 6)
-        rnd[7] = np.random.normal(0, 2) # (np.random.rand(1)-0.5)*2*20
+        rnd[5] = np.random.normal(1.5, 1.5) #(rnd[5] - 0.5) * 2 * 6
+        rnd[6] = (rnd[6] - 0.5) * 2 * 10 # np.random.normal(0, 6)
+        rnd[7] = np.random.normal(0, 3) # (np.random.rand(1)-0.5)*2*20
         rnd[8] = np.random.normal(0, 0.05) # (np.random.rand(1)-0.5)*2*5
         rnd[9] = (rnd[9] - 0.5) * 2 * 5 + 3 #np.random.normal(2, 12)
         # convert to hopper foot coordinates
         rnd_ft = np.zeros(10)
         rnd_ft[0] = rnd[0]-np.sin(rnd[2])*rnd[4]
         rnd_ft[1] = rnd[0]-np.cos(rnd[2])*rnd[4]
-        rnd_ft[2:5] = rnd[2:5]
+        # if np.random.rand(1)<0.7:
+        #     rnd_ft[1]=(rnd[1]/2-0.2)
+
         rnd_ft[5] = rnd[5]-rnd[9]*np.sin(rnd[2])-rnd[4]*np.cos(rnd[2])*rnd[7]
-        rnd_ft[6] = rnd[6]-rnd[9]*np.cos(rnd[2])+rnd[4]*np.sin(rnd[2])*rnd[7]
-        rnd_ft[7:] = rnd[7:]
+        rnd_ft[6] = rnd[6] - rnd[9] * np.cos(rnd[2]) + rnd[4] * np.sin(rnd[2]) * rnd[7]
+        if rnd_ft[1]<=0:
+            rnd_ft[2]=rnd[2]*2
+            rnd_ft[7]=rnd[7]*5
+        else:
+            rnd_ft[2] = rnd[2]
+            rnd_ft[7] = rnd[7]
+        rnd_ft[3:5] = rnd[3:5]
+        rnd_ft[8:] = rnd[8:]
         return rnd_ft
+
+    def hybrid_sampler():
+        # samples contact and flight separately
+        raise NotImplementedError
 
     # def gaussian_mixture_sampler():
     #     gaussian_ratio = 0.4
@@ -216,7 +244,7 @@ def test_hopper_2d_planning():
     max_iterations = 10000
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 60, rewire=True, explore_deterministic_next_state=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
