@@ -132,7 +132,7 @@ def test_hopper_2d_planning():
     def uniform_sampler():
         rnd = np.random.rand(10)
         rnd[0] = rnd[0]*10-0.5
-        rnd[1] = (rnd[1]-0.5)*10+3
+        rnd[1] = (rnd[1]-0.5)*2+3
         rnd[2] = np.random.normal(0, np.pi/12)
         rnd[3] = np.random.normal(0, np.pi/16)
         rnd[4] = (rnd[4]-0.5)*2*4+5
@@ -151,7 +151,7 @@ def test_hopper_2d_planning():
         rnd[3] = np.random.normal(0, np.pi/6) #np.random.normal(0, np.pi/16)
         rnd[4] = (rnd[4]-0.5)*2*4+5
         rnd[5] = (rnd[5]-0.5)*2*3
-        rnd[6] = (rnd[5]-0.5)*2*8 + 3#np.random.normal(0, 6)
+        rnd[6] = (rnd[5]-0.5)*2*6#np.random.normal(0, 6)
         rnd[7] = np.random.normal(0, 30)
         rnd[8] = np.random.normal(0, 2)
         rnd[9] = (rnd[9] - 0.1) * 2 * 20
@@ -163,15 +163,15 @@ def test_hopper_2d_planning():
         #     return uniform_sampler()
         rnd = np.random.rand(10)
         rnd[0] = rnd[0] * 10 - 3
-        rnd[1] = (rnd[1] - 0.5) * 2 * 5 + 4
+        rnd[1] = (rnd[1] - 0.5) * 2 * 2 + 4
         rnd[2] = np.random.normal(0, np.pi / 6) # (np.random.rand(1)-0.5)*2*np.pi/12
         rnd[3] = np.random.normal(0, np.pi / 8)#np.random.normal(0, np.pi / 16)
-        rnd[4] = (rnd[4] - 0.5) * 2 * 2 + 4
+        rnd[4] = (rnd[4] - 0.5) * 2 * 4 + 4
         rnd[5] = np.random.normal(1.5, 1.5) #(rnd[5] - 0.5) * 2 * 6
-        rnd[6] = (rnd[6] - 0.5) * 2 * 10 # np.random.normal(0, 6)
+        rnd[6] = (rnd[6] - 0.5) * 2 * 2 # np.random.normal(0, 6)
         rnd[7] = np.random.normal(0, 20) # (np.random.rand(1)-0.5)*2*20
         rnd[8] = np.random.normal(0, 0.5) # (np.random.rand(1)-0.5)*2*5
-        rnd[9] = (rnd[9] - 0.5) * 2 * 5 + 3 #np.random.normal(2, 12)
+        rnd[9] = (rnd[9] - 0.5) * 2 * 10 + 3 #np.random.normal(2, 12)
         # convert to hopper foot coordinates
         rnd_ft = np.zeros(10)
         rnd_ft[0] = rnd[0]-np.sin(rnd[2])*rnd[4]
@@ -192,9 +192,10 @@ def test_hopper_2d_planning():
         return rnd_ft
 
     def hybrid_sampler():
-        # samples contact and flight separately
-        raise NotImplementedError
-
+        if np.random.rand(1)<0.5:
+            return hip_coordinates_sampler()
+        else:
+            return contact_sampler()
     # def gaussian_mixture_sampler():
     #     gaussian_ratio = 0.4
     #     rnd = np.random.rand(2)
@@ -235,7 +236,7 @@ def test_hopper_2d_planning():
             return True
         return False
 
-    rrt = Hopper2D_RGRRTStar(hopper_system, hip_coordinates_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = Hopper2D_RGRRTStar(hopper_system, hybrid_sampler, step_size, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
