@@ -17,7 +17,7 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
     def __init__(self, parent_state, polytope_list, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, ground_height_function = lambda x:0):
         PolytopeReachableSet.__init__(self, parent_state, polytope_list, epsilon, contains_goal_function, deterministic_next_state)
         self.ground_height_function = ground_height_function
-        self.body_attitude_limit = np.pi/4
+        self.body_attitude_limit = np.pi/2-1e-2
         self.leg_attitude_limit = np.pi/3
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
         #fixme: support collision checking
@@ -48,7 +48,7 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
                 return np.inf, None
 
         # stuck in the ground
-        if goal_state[4]+goal_state[9]*2e-2<0.2:
+        if goal_state[4]+goal_state[9]*2e-2<0.2 or goal_state[4]+goal_state[9]*2e-2>8:
             # print('r invalid')
             if return_deterministic_next_state:
                 return np.inf, None, None
@@ -115,13 +115,13 @@ class Hopper2D_RGRRTStar(SymbolicSystem_RGRRTStar):
             #     print("H", reachable_set_polytope[0].P.H)
             #     print("h", reachable_set_polytope[0].P.h)
             #TODO: collision check here
-            if np.all(self.sys.get_linearization(state=state).B == 0):
+            if np.all(abs(self.sys.get_linearization(state=state).B)<= 1e-5):
                 deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
             return Hopper2D_ReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
         SymbolicSystem_RGRRTStar.__init__(self, sys, sampler, step_size, contains_goal_function, compute_reachable_set)
 
 def test_hopper_2d_planning():
-    initial_state = np.asarray([0., 0.5, -0.1, 0, 4, 0., 0., 0., 0., 0.])
+    initial_state = np.asarray([0., 1., 0.1, 0, 4, 0., 0., 0., 0., 0.])
     hopper_system = Hopper_2d(initial_state=initial_state)
     # [theta1, theta2, x0, y0, w]
     # from x0 = 0 move to x0 = 5
@@ -147,8 +147,8 @@ def test_hopper_2d_planning():
         rnd = np.random.rand(10)
         rnd[0] = rnd[0]*10-0.5
         rnd[1] = np.random.normal(-0.5,0.2)
-        rnd[2] = np.random.normal(0, np.pi/6)
-        rnd[3] = np.random.normal(0, np.pi/16)
+        rnd[2] = np.random.normal(0, np.pi/4) #np.random.normal(0, np.pi/6)
+        rnd[3] = np.random.normal(0, np.pi/6) #np.random.normal(0, np.pi/16)
         rnd[4] = (rnd[4]-0.5)*2*4+5
         rnd[5] = (rnd[5]-0.5)*2*3
         rnd[6] = (rnd[5]-0.5)*2*8 + 3#np.random.normal(0, 6)
@@ -163,14 +163,14 @@ def test_hopper_2d_planning():
         #     return uniform_sampler()
         rnd = np.random.rand(10)
         rnd[0] = rnd[0] * 10 - 3
-        rnd[1] = (rnd[1] - 0.5) * 2 * 2.5 + 4
-        rnd[2] = np.random.normal(0, np.pi / 12) # (np.random.rand(1)-0.5)*2*np.pi/12
-        rnd[3] = np.random.normal(0, np.pi / 10)#np.random.normal(0, np.pi / 16)
+        rnd[1] = (rnd[1] - 0.5) * 2 * 5 + 4
+        rnd[2] = np.random.normal(0, np.pi / 6) # (np.random.rand(1)-0.5)*2*np.pi/12
+        rnd[3] = np.random.normal(0, np.pi / 8)#np.random.normal(0, np.pi / 16)
         rnd[4] = (rnd[4] - 0.5) * 2 * 2 + 4
         rnd[5] = np.random.normal(1.5, 1.5) #(rnd[5] - 0.5) * 2 * 6
         rnd[6] = (rnd[6] - 0.5) * 2 * 10 # np.random.normal(0, 6)
-        rnd[7] = np.random.normal(0, 3) # (np.random.rand(1)-0.5)*2*20
-        rnd[8] = np.random.normal(0, 0.05) # (np.random.rand(1)-0.5)*2*5
+        rnd[7] = np.random.normal(0, 20) # (np.random.rand(1)-0.5)*2*20
+        rnd[8] = np.random.normal(0, 0.5) # (np.random.rand(1)-0.5)*2*5
         rnd[9] = (rnd[9] - 0.5) * 2 * 5 + 3 #np.random.normal(2, 12)
         # convert to hopper foot coordinates
         rnd_ft = np.zeros(10)
@@ -244,7 +244,7 @@ def test_hopper_2d_planning():
     max_iterations = 10000
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 60, rewire=True, explore_deterministic_next_state=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -308,27 +308,27 @@ def test_hopper_2d_planning():
         plt.clf()
         plt.close()
 
-        # # save hopper animation
-        # os.makedirs('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds' % duration)
-        # # find state closest to goal
-        # nearest_box = np.hstack([goal_state[0:5], np.ones(5)*-1000, goal_state[0:5], np.ones(5)*1000])
-        # closest_state_to_goal = list(rrt.state_tree.state_idx.nearest(nearest_box,1))[0]
-        # node_to_plot = rrt.state_to_node_map[closest_state_to_goal]
-        # states_to_plot = []
-        # while(1):
-        #     states_to_plot.append(node_to_plot.state)
-        #     if node_to_plot.parent is None:
-        #         break
-        #     else:
-        #         node_to_plot = node_to_plot.parent
-        # states_to_plot.reverse()
-        # for index, s in enumerate(states_to_plot):
-        #     fig = plt.figure()
-        #     ax = fig.add_subplot(111)
-        #     hopper_plot(s, ax, fig)
-        #     plt.savefig('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds/%i' % (duration, index), dpi=500)
-        #     plt.clf()
-        #     plt.close()
+        # save hopper animation
+        os.makedirs('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds' % duration)
+        # find state closest to goal
+        nearest_box = np.hstack([goal_state[0:5], np.ones(5)*-1000, goal_state[0:5], np.ones(5)*1000])
+        closest_state_to_goal = list(rrt.state_tree.state_idx.nearest(nearest_box,1))[0]
+        node_to_plot = rrt.state_to_node_map[closest_state_to_goal]
+        states_to_plot = []
+        while(1):
+            states_to_plot.append(node_to_plot.state)
+            if node_to_plot.parent is None:
+                break
+            else:
+                node_to_plot = node_to_plot.parent
+        states_to_plot.reverse()
+        for index, s in enumerate(states_to_plot):
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            hopper_plot(s, fig, ax, xlim=[-5, 20], ylim=[-2, 20], scaling_factor=1)
+            plt.savefig('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds/%i' % (duration, index), dpi=500)
+            plt.clf()
+            plt.close()
 
         # plt.show()
         if found_goal:

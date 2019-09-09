@@ -244,7 +244,7 @@ class RGRRTStar:
         parent_node.children.add(new_node)
         return new_node
 
-    def extend(self, new_state, nearest_node, explore_deterministic_next_state=False):
+    def extend(self, new_state, nearest_node, explore_deterministic_next_state=True):
         # check for obstacles
         if explore_deterministic_next_state:
             cost_to_go, path, deterministic_next_state = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state,
