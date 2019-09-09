@@ -102,16 +102,15 @@ class PolytopeReachableSet(ReachableSet):
         if np.linalg.norm(closest_point-self.parent_state)<self.epsilon:
             return np.ndarray.flatten(closest_point), True
         if self.use_true_reachable_set and self.reachable_set_step_size:
-            raise NotImplementedError
             #FIXME: this is broken
             #solve for the control input that leads to this state
-            u = np.dot(np.linalg.pinv(p_used.T), closest_point-p_used.t)[0:self.sys.u.shape[0]]
-            # print(u)
+            u = np.dot(np.linalg.pinv(self.sys.get_linearization(self.parent_state).B*self.reachable_set_step_size), closest_point-p_used.t)[0:self.sys.u.shape[0]]
             #simulate nonlinear forward dynamics
             state = self.parent_state
-            for step in range(int(self.reachable_set_step_size/1e-3)):
+            for step in range(int(self.reachable_set_step_size/1e-2)):
                 state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = 1e-2, return_as_env = False,
                      starting_state= state)
+                # print step,state
             # print(state, closest_point)
             return np.ndarray.flatten(state), False
         else:

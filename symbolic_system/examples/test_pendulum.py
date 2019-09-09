@@ -19,11 +19,11 @@ def test_pendulum_planning():
     pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-1],[1]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
-    step_size = 0.075
+    step_size = 0.15 # 0.075
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = (rnd[0]-0.5)*2*1.5*np.pi
-        rnd[1] = (rnd[1]-0.5)*2*9
+        rnd[1] = (rnd[1]-0.5)*2*18
         goal_bias_rnd = np.random.rand(1)
         # if goal_bias_rnd <0.2:
         #     return goal_state + [2*np.pi*np.random.randint(-1,1),0] + [np.random.normal(0,0.8),np.random.normal(0,1.5)]
@@ -60,9 +60,9 @@ def test_pendulum_planning():
     def contains_goal_function(reachable_set, goal_state):
         global best_distance
         distance=np.inf
-        if np.linalg.norm(reachable_set.parent_state-goal_state)<1:
+        if np.linalg.norm(reachable_set.parent_state-goal_state)<5e-1:
             distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state)
-        elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<1:
+        elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<5e-1:
             distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state_2)
         # # if (abs(projection1[0]-goal_state[0])%(2*np.pi)<3e-1 and abs(projection1[1]-goal_state[1])<3e-1) or \
         # # (abs(projection2[0] - goal_state[0]) % (2 * np.pi) < 3e-1 and abs(projection2[1] - goal_state[1]) < 3e-1):
@@ -83,7 +83,7 @@ def test_pendulum_planning():
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function, use_true_reachable_set=False)
+    rrt = SymbolicSystem_RGRRTStar(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function, use_true_reachable_set=True)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -91,7 +91,7 @@ def test_pendulum_planning():
     os.makedirs('RRT_Pendulum_'+experiment_name)
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 100, rewire=True, explore_deterministic_next_state=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=False) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
