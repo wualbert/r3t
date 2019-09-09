@@ -15,7 +15,7 @@ best_distance=np.inf
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.1],[0.1]]), m=1, l=0.5, g=9.8, b=0.1)
+    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-1.1],[1.1]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
     step_size = 0.075
@@ -135,25 +135,26 @@ def test_pendulum_planning():
         plt.clf()
         plt.close()
 
-        # # # Plot explored reachable sets
-        # # FIXME: Handle degenerated reachable set
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111)
-        # fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax)
-        #
-        # ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
-        # ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
-        # ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
-        #
-        # # ax.set_aspect('equal')
-        # plt.xlabel('$x$')
-        # plt.ylabel('$\dot{x}$')
-        # duration += (end_time-start_time)
-        # plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
-        # plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
-        # # plt.show()
-        # plt.clf()
-        # # plt.close()
+
+        # # Plot explored reachable sets
+        # FIXME: Handle degenerated reachable set
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01)
+
+        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
+        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
+        ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
+
+        # ax.set_aspect('equal')
+        plt.xlabel('$x$')
+        plt.ylabel('$\dot{x}$')
+        duration += (end_time-start_time)
+        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
+        plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
+        # plt.show()
+        plt.clf()
+        # plt.close()
 
         if found_goal:
             break
