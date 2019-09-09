@@ -150,7 +150,6 @@ def test_pendulum_planning():
         # ax.set_aspect('equal')
         plt.xlabel('$x$')
         plt.ylabel('$\dot{x}$')
-        duration += (end_time-start_time)
         plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
         plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
         # plt.show()

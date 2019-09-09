@@ -102,6 +102,8 @@ class PolytopeReachableSet(ReachableSet):
         if np.linalg.norm(closest_point-self.parent_state)<self.epsilon:
             return np.ndarray.flatten(closest_point), True
         if self.use_true_reachable_set and self.reachable_set_step_size:
+            raise NotImplementedError
+            #FIXME: this is broken
             #solve for the control input that leads to this state
             u = np.dot(np.linalg.pinv(p_used.T), closest_point-p_used.t)[0:self.sys.u.shape[0]]
             # print(u)
