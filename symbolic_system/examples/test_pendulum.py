@@ -15,7 +15,7 @@ def test_pendulum_planning():
     pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.1],[0.1]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
-    step_size = 0.075
+    step_size = 0.15#0.075
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = (rnd[0]-0.5)*2*1.5*np.pi
@@ -76,7 +76,7 @@ def test_pendulum_planning():
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = SymbolicSystem_RGRRTStar(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function, use_true_reachable_set=False)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -85,7 +85,7 @@ def test_pendulum_planning():
     while(1):
 
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 100, rewire=True, explore_deterministic_next_state=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=False) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -128,8 +128,8 @@ def test_pendulum_planning():
         plt.clf()
         plt.close()
 
-        # # Plot explored reachable sets
-        # FIXME: Handle degenerated reachable set
+        # # # Plot explored reachable sets
+        # # FIXME: Handle degenerated reachable set
         # fig = plt.figure()
         # ax = fig.add_subplot(111)
         # fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax)
@@ -146,7 +146,7 @@ def test_pendulum_planning():
         # plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
         # # plt.show()
         # plt.clf()
-        # plt.close()
+        # # plt.close()
 
         if found_goal:
             break
