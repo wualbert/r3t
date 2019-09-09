@@ -94,7 +94,7 @@ def test_pendulum_planning():
         plt.xlabel('$\\theta$')
         plt.ylabel('$\dot{\\theta}$')
         duration += (end_time-start_time)
-        plt.title('RG RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.title('RG-RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
         plt.savefig('RG_RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
         # plt.show()
         plt.xlim([-4, 4])
@@ -126,5 +126,5 @@ def test_pendulum_planning():
             break
 
 if __name__=='__main__':
-    for i in range(1):
+    for i in range(10):
         test_pendulum_planning()

@@ -59,9 +59,9 @@ def test_pendulum_planning():
     def contains_goal_function(reachable_set, goal_state):
         global best_distance
         distance=np.inf
-        if np.linalg.norm(reachable_set.parent_state-goal_state)<5e-1:
+        if np.linalg.norm(reachable_set.parent_state-goal_state)<1:
             distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state)
-        elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<5e-1:
+        elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<1:
             distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state_2)
         # # if (abs(projection1[0]-goal_state[0])%(2*np.pi)<3e-1 and abs(projection1[1]-goal_state[1])<3e-1) or \
         # # (abs(projection2[0] - goal_state[0]) % (2 * np.pi) < 3e-1 and abs(projection2[1] - goal_state[1]) < 3e-1):
@@ -77,7 +77,7 @@ def test_pendulum_planning():
         #               np.linalg.norm(reachable_set.parent_state-goal_state_2)))
         if best_distance>distance:
             best_distance=distance
-        if distance<1e-1:
+        if distance<1.5e-1:
             # print(goal_diff, np.linalg.norm(goal_diff))
             return True
         return False
@@ -135,25 +135,25 @@ def test_pendulum_planning():
         plt.clf()
         plt.close()
 
-        # # Plot explored reachable sets
-        # FIXME: Handle degenerated reachable set
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax)
-
-        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
-        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
-        ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
-
-        # ax.set_aspect('equal')
-        plt.xlabel('$x$')
-        plt.ylabel('$\dot{x}$')
-        duration += (end_time-start_time)
-        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
-        plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
-        # plt.show()
-        plt.clf()
-        # plt.close()
+        # # # Plot explored reachable sets
+        # # FIXME: Handle degenerated reachable set
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax)
+        #
+        # ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
+        # ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
+        # ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
+        #
+        # # ax.set_aspect('equal')
+        # plt.xlabel('$x$')
+        # plt.ylabel('$\dot{x}$')
+        # duration += (end_time-start_time)
+        # plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
+        # plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
+        # # plt.show()
+        # plt.clf()
+        # # plt.close()
 
         if found_goal:
             break
