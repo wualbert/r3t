@@ -10,12 +10,15 @@ import time
 from datetime import datetime
 import os
 
+global best_distance
+best_distance=np.inf
+
 def test_pendulum_planning():
     initial_state = np.zeros(2)
     pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.1],[0.1]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
-    step_size = 0.15#0.075
+    step_size = 0.075
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = (rnd[0]-0.5)*2*1.5*np.pi
@@ -54,6 +57,7 @@ def test_pendulum_planning():
         return rnd
 
     def contains_goal_function(reachable_set, goal_state):
+        global best_distance
         distance=np.inf
         if np.linalg.norm(reachable_set.parent_state-goal_state)<5e-1:
             distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state)
@@ -71,7 +75,9 @@ def test_pendulum_planning():
         #         np.linalg.norm(reachable_set.parent_state-goal_state_2)<5e-1:
         #     print(min(np.linalg.norm(reachable_set.parent_state-goal_state),\
         #               np.linalg.norm(reachable_set.parent_state-goal_state_2)))
-        if distance<1.5e-1:
+        if best_distance>distance:
+            best_distance=distance
+        if distance<1e-1:
             # print(goal_diff, np.linalg.norm(goal_diff))
             return True
         return False
@@ -83,9 +89,8 @@ def test_pendulum_planning():
     duration = 0
     os.makedirs('RRT_Pendulum_'+experiment_name)
     while(1):
-
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 10, rewire=True, explore_deterministic_next_state=False) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -105,6 +110,8 @@ def test_pendulum_planning():
                 goal_override = np.asarray([np.pi,0.0])
             else:
                 goal_override = np.asarray([-np.pi, 0.0])
+
+        print('best distance: %f' %best_distance)
         # Plot state tree
         fig = plt.figure()
         ax = fig.add_subplot(111)
