@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.pendulum import Pendulum
@@ -9,6 +10,8 @@ from rg_rrt_star.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
 import os
+matplotlib.rcParams['font.family'] = "Times New Roman"
+
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
@@ -19,7 +22,7 @@ def test_pendulum_planning():
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = (rnd[0]-0.5)*2*1.5*np.pi
-        rnd[1] = (rnd[1]-0.5)*2*9
+        rnd[1] = (rnd[1]-0.5)*2*12
         goal_bias_rnd = np.random.rand(1)
         # if goal_bias_rnd <0.2:
         #     return goal_state + [2*np.pi*np.random.randint(-1,1),0] + [np.random.normal(0,0.8),np.random.normal(0,1.5)]
@@ -54,7 +57,7 @@ def test_pendulum_planning():
         return rnd
 
     def reached_goal_function(state, goal_state):
-        if np.linalg.norm(state-goal_state)<1.5e-1 or np.linalg.norm(state-goal_state_2)<1.5e-1:
+        if np.linalg.norm(state-goal_state)<5e-2 or np.linalg.norm(state-goal_state_2)<5e-2:
             return True
         return False
 
@@ -66,7 +69,7 @@ def test_pendulum_planning():
     os.makedirs('RG_RRT_Pendulum_'+experiment_name)
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 100, rewire=False, explore_deterministic_next_state=False) is not None:
             found_goal = True
         end_time = time.time()
 
@@ -89,12 +92,16 @@ def test_pendulum_planning():
         ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
         ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
         ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
-
-        # ax.set_aspect('equal')
-        plt.xlabel('$\\theta$')
-        plt.ylabel('$\dot{\\theta}$')
+        ax.grid(True, which='both')
+        y_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
+        ax.yaxis.set_major_formatter(y_formatter)
+        ax.set_yticks(np.arange(-10, 10, 2))
+        ax.set_xlim([-4, 4])
+        ax.set_ylim([-10, 10])
+        ax.set_xlabel('$\\theta (rad)$')
+        ax.set_ylabel('$\dot{\\theta} (rad/s)$')
         duration += (end_time-start_time)
-        plt.title('RG-RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.title('RG-RRT after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
         plt.savefig('RG_RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
         # plt.show()
         plt.xlim([-4, 4])
