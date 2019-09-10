@@ -1,8 +1,7 @@
 import pydrake
 from rg_rrt_star.common.rg_rrt_star import *
 from polytope_symbolic_system.common.symbolic_system import *
-# from pypolycontain.lib.AH_polytope import distance_point
-from pypolycontain.lib.operations import distance_point_polytope as distance_point
+from pypolycontain.lib.operations import distance_point_polytope
 from collections import deque
 from rtree import index
 from closest_polytope.bounding_box.polytope_tree import PolytopeTree
@@ -11,7 +10,7 @@ from closest_polytope.bounding_box.box import AH_polytope_to_box, \
 
 
 class PolytopeReachableSet(ReachableSet):
-    def __init__(self, parent_state, polytope_list, sys, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, use_true_reachable_set=False, reachable_set_step_size=None):
+    def __init__(self, parent_state, polytope_list, sys, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, use_true_reachable_set=False, reachable_set_step_size=None, nonlinear_dynamic_step_size=1e-2):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
         try:
@@ -23,6 +22,7 @@ class PolytopeReachableSet(ReachableSet):
         self.sys=sys
         self.use_true_reachable_set = use_true_reachable_set
         self.reachable_set_step_size = reachable_set_step_size
+        self.nonlinear_dynamic_step_size = nonlinear_dynamic_step_size
         # try:
         #     self.parent_distance = min([distance_point(p, self.parent_state)[0] for p in self.polytope_list])
         # except TypeError:
@@ -41,7 +41,7 @@ class PolytopeReachableSet(ReachableSet):
             for i, polytope in enumerate(self.polytope_list):
                 # if point_to_box_distance(goal_state, self.aabb_list[i])>0:
                 #     continue
-                current_distance, current_closest_state = distance_point(polytope, goal_state)
+                current_distance, current_closest_state = distance_point_polytope(polytope, goal_state, ball='l2')
                 if current_distance < self.epsilon:
                     if return_closest_state:
                         return True, goal_state
@@ -53,7 +53,7 @@ class PolytopeReachableSet(ReachableSet):
                         closest_state = current_closest_state
             return False, closest_state
         except TypeError:
-            distance, closest_state = distance_point(self.polytope_list, goal_state)
+            distance, closest_state = distance_point_polytope(self.polytope_list, goal_state, ball='l2')
             if distance < self.epsilon:
                 if return_closest_state:
                     return True, closest_state
@@ -77,6 +77,7 @@ class PolytopeReachableSet(ReachableSet):
         '''
         distance = np.inf
         closest_point = None
+        mode = None
         p_used = None
         try:
             #use AABB to upper bound distance
@@ -90,25 +91,31 @@ class PolytopeReachableSet(ReachableSet):
                 #ignore polytopes that are impossible
                 if point_to_box_distance(query_point, self.aabb_list[i]) > min_dmax:
                     continue
-                d, proj = distance_point(p, query_point)
+                d, proj = distance_point_polytope(p, query_point, ball='l2')
                 if d<distance:
                     distance = d
                     closest_point = proj
+                    mode = i
                     p_used = p
             assert closest_point is not None
         except TypeError:
-            closest_point = distance_point(self.polytope_list, query_point)[1]
+            closest_point = distance_point_polytope(self.polytope_list, query_point, ball='l2')[1]
+            mode = None
             p_used = self.polytope_list
         if np.linalg.norm(closest_point-self.parent_state)<self.epsilon:
             return np.ndarray.flatten(closest_point), True
         if self.use_true_reachable_set and self.reachable_set_step_size:
-            #FIXME: this is broken
             #solve for the control input that leads to this state
-            u = np.dot(np.linalg.pinv(self.sys.get_linearization(self.parent_state).B*self.reachable_set_step_size), closest_point-p_used.t)[0:self.sys.u.shape[0]]
+            current_linsys = self.sys.get_linearization(self.parent_state, mode=mode)
+            u = np.dot(np.linalg.pinv(current_linsys.B*self.reachable_set_step_size), \
+                       (np.ndarray.flatten(closest_point)-np.ndarray.flatten(self.parent_state)-\
+                        self.reachable_set_step_size*(np.dot(current_linsys.A, self.parent_state)+\
+                                                                                      np.ndarray.flatten(current_linsys.c))))
+            u = np.ndarray.flatten(u)[0:self.sys.u.shape[0]]
             #simulate nonlinear forward dynamics
             state = self.parent_state
-            for step in range(int(self.reachable_set_step_size/1e-2)):
-                state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = 1e-2, return_as_env = False,
+            for step in range(int(self.reachable_set_step_size/self.nonlinear_dynamic_step_size)):
+                state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
                      starting_state= state)
                 # print step,state
             # print(state, closest_point)
@@ -237,21 +244,28 @@ class SymbolicSystem_StateTree(StateTree):
             return list(self.state_idx.intersection(lu))
 
 class SymbolicSystem_RGRRTStar(RGRRTStar):
-    def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False):
+    def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False, nonlinear_dynamic_step_size=1e-2, use_convex_hull=True):
         self.sys = sys
         self.step_size = step_size
         self.contains_goal_function = contains_goal_function
         if compute_reachable_set is None:
             def compute_reachable_set(state):
                 '''
-                Compute zonotopic reachable set using the system
+                Compute polytopic reachable set using the system
                 :param h:
                 :return:
                 '''
                 deterministic_next_state = None
-                reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size)
+                reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size, use_convex_hull=use_convex_hull)
                 if np.all(self.sys.get_linearization(state=state).B == 0):
-                    deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
+                    print('simulating deterministic next state')
+                    if use_true_reachable_set:
+                        for step in range(int(self.step_size / nonlinear_dynamic_step_size)):
+                            state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=nonlinear_dynamic_step_size)
+                        deterministic_next_state = state
+                    else:
+                        deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
                 return PolytopeReachableSet(state,reachable_set_polytope, sys=self.sys, contains_goal_function=self.contains_goal_function, \
-                                            deterministic_next_state=deterministic_next_state, reachable_set_step_size=self.step_size, use_true_reachable_set=use_true_reachable_set)
+                                            deterministic_next_state=deterministic_next_state, reachable_set_step_size=self.step_size, use_true_reachable_set=use_true_reachable_set,\
+                                            nonlinear_dynamic_step_size=nonlinear_dynamic_step_size)
         RGRRTStar.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)

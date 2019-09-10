@@ -23,7 +23,7 @@ def test_pendulum_planning():
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = (rnd[0]-0.5)*2*1.5*np.pi
-        rnd[1] = (rnd[1]-0.5)*2*18
+        rnd[1] = (rnd[1]-0.5)*2*9
         goal_bias_rnd = np.random.rand(1)
         # if goal_bias_rnd <0.2:
         #     return goal_state + [2*np.pi*np.random.randint(-1,1),0] + [np.random.normal(0,0.8),np.random.normal(0,1.5)]
@@ -83,7 +83,8 @@ def test_pendulum_planning():
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRTStar(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function, use_true_reachable_set=True)
+    rrt = SymbolicSystem_RGRRTStar(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function,\
+                                   use_true_reachable_set=True, use_convex_hull=False)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
