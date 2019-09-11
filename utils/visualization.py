@@ -29,13 +29,8 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_
         if node.children is not None:
             # print(len(node.children))
             node_queue.extend(list(node.children))
-            for child in node.children:
-                if dims:
-                    child_state = np.ndarray.flatten(child.state)[dims]
-                else:
-                    child_state = np.ndarray.flatten(child.state)
-
         ax.scatter(*state, c='gray', s=s)
+
     if show_path_to_goal:
         goal_lines = []
         node = rrt.goal_node
