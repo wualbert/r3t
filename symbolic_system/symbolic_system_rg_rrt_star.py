@@ -10,7 +10,8 @@ from closest_polytope.bounding_box.box import AH_polytope_to_box, \
 
 
 class PolytopeReachableSet(ReachableSet):
-    def __init__(self, parent_state, polytope_list, sys, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, use_true_reachable_set=False, reachable_set_step_size=None, nonlinear_dynamic_step_size=1e-2):
+    def __init__(self, parent_state, polytope_list, sys, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
+                 use_true_reachable_set=False, reachable_set_step_size=None, nonlinear_dynamic_step_size=1e-2):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
         try:
@@ -64,12 +65,13 @@ class PolytopeReachableSet(ReachableSet):
             return False
 
     def contains_goal(self, goal_state):
-        if self.contains_goal is None:
-            return self.contains(goal_state)
-        else:
+        # check if goal is epsilon away from the reachable sets
+        if self.contains_goal_function:
             return self.contains_goal_function(self, goal_state)
+        raise NotImplementedError
 
-    def find_closest_state(self, query_point):
+
+    def find_closest_state(self, query_point, save_true_dynamics_path=False):
         '''
         Find the closest state from the query point to a given polytope
         :param query_point:
@@ -103,7 +105,9 @@ class PolytopeReachableSet(ReachableSet):
             mode = None
             p_used = self.polytope_list
         if np.linalg.norm(closest_point-self.parent_state)<self.epsilon:
-            return np.ndarray.flatten(closest_point), True
+            if save_true_dynamics_path:
+                return np.ndarray.flatten(closest_point), True, np.asarray([])
+            return np.ndarray.flatten(closest_point), True, np.asarray([self.parent_state, np.ndarray.flatten(closest_point)])
         if self.use_true_reachable_set and self.reachable_set_step_size:
             #solve for the control input that leads to this state
             current_linsys = self.sys.get_linearization(self.parent_state, mode=mode)
@@ -114,14 +118,19 @@ class PolytopeReachableSet(ReachableSet):
             u = np.ndarray.flatten(u)[0:self.sys.u.shape[0]]
             #simulate nonlinear forward dynamics
             state = self.parent_state
+            state_list = [self.parent_state]
             for step in range(int(self.reachable_set_step_size/self.nonlinear_dynamic_step_size)):
                 state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
                      starting_state= state)
+                state_list.append(state)
                 # print step,state
             # print(state, closest_point)
-            return np.ndarray.flatten(state), False
+            if save_true_dynamics_path:
+                return np.ndarray.flatten(state), False, np.asarray(state_list)
+            else:
+                return np.ndarray.flatten(state), False, np.asarray([self.parent_state, np.ndarray.flatten(state)])
         else:
-            return np.ndarray.flatten(closest_point), False
+            return np.ndarray.flatten(closest_point), False, np.asarray([self.parent_state, np.ndarray.flatten(closest_point)])
 
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
         try:
@@ -130,7 +139,6 @@ class PolytopeReachableSet(ReachableSet):
         except AttributeError:
             pass
         #fixme: support collision checking
-
         #
         # is_contain, closest_state = self.contains(goal_state)
         # if not is_contain:
@@ -244,10 +252,12 @@ class SymbolicSystem_StateTree(StateTree):
             return list(self.state_idx.intersection(lu))
 
 class SymbolicSystem_RGRRTStar(RGRRTStar):
-    def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False, nonlinear_dynamic_step_size=1e-2, use_convex_hull=True):
+    def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False, \
+                 nonlinear_dynamic_step_size=1e-2, use_convex_hull=True, goal_tolerance = 1e-2):
         self.sys = sys
         self.step_size = step_size
         self.contains_goal_function = contains_goal_function
+        self.goal_tolerance = goal_tolerance
         if compute_reachable_set is None:
             def compute_reachable_set(state):
                 '''

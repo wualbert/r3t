@@ -18,6 +18,14 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_
             state = np.ndarray.flatten(node.state)[dims]
         else:
             state = np.ndarray.flatten(node.state)
+        if goal_override is not None and node==rrt.goal_node:
+            lines.append([state, goal_override])
+        elif node == rrt.root_node:
+            pass
+        else:
+            for i in range(len(node.true_dynamics_path)-1):
+                lines.append([np.ndarray.flatten(node.true_dynamics_path[i]),
+                                   np.ndarray.flatten(node.true_dynamics_path[i + 1])])
         if node.children is not None:
             # print(len(node.children))
             node_queue.extend(list(node.children))
@@ -26,20 +34,18 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_
                     child_state = np.ndarray.flatten(child.state)[dims]
                 else:
                     child_state = np.ndarray.flatten(child.state)
-                # don't plot the goal if goal override is on
-                if goal_override is not None and child==rrt.goal_node:
-                    lines.append([state, goal_override])
-                else:
-                    lines.append([state, child_state])
+
         ax.scatter(*state, c='gray', s=s)
     if show_path_to_goal:
         goal_lines = []
         node = rrt.goal_node
         if goal_override is not None:
+            #FIXME: make this cleaner
             goal_lines.append([goal_override, np.ndarray.flatten(node.parent.state)])
             node = node.parent
         while node.parent is not None:
-            goal_lines.append([np.ndarray.flatten(node.state), np.ndarray.flatten(node.parent.state)])
+            for i in range(len(node.true_dynamics_path)-1):
+                goal_lines.append([np.ndarray.flatten(node.true_dynamics_path[i]), np.ndarray.flatten(node.true_dynamics_path[i+1])])
             assert(node in node.parent.children)
             node = node.parent
         line_colors = np.full(len(lines), 'gray')

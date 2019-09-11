@@ -50,9 +50,11 @@ class ReachableSet:
         '''
         Containment check for goal state. Supports fuzzy checks.
         :param goal_state:
-        :return:
+        :return: contains_goal, path_if_goal_is_contained
         '''
-        return self.contains(goal_state)
+        # if goal is epsilon-away from reachable set, do fine goal check
+        # enumerate control inputs to see if goal can be reached
+        raise NotImplementedError
 
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state=False):
         '''
@@ -66,7 +68,7 @@ class ReachableSet:
         raise('NotImplementedError')
 
 
-    def find_closest_state(self, query_point):
+    def find_closest_state(self, query_point, save_true_dynamics_path=False):
         '''
         Finds the closest point in the reachable set to the query point
         :param query_point:
@@ -75,7 +77,7 @@ class ReachableSet:
         raise('NotImplementedError')
 
 class Node:
-    def __init__(self, state, reachable_set, parent = None, path_from_parent = None,
+    def __init__(self, state, reachable_set, true_dynamics_path, parent = None, path_from_parent = None,
                  children = None, cost_from_parent = np.inf):
         '''
         A node in the RRT tree
@@ -91,6 +93,7 @@ class Node:
         self.parent = parent
         self.path_from_parent = path_from_parent
         self.cost_from_parent = cost_from_parent
+        self.true_dynamics_path = true_dynamics_path
         if children is not None:
             self.children = children
         else:
@@ -206,7 +209,7 @@ class RGRRTStar:
         :param reachable_set_tree: A StateTree object for fast querying
         :param path_class: A class handel that is used to represent path
         '''
-        self.root_node = Node(root_state, compute_reachable_set(root_state), cost_from_parent=0)
+        self.root_node = Node(root_state, compute_reachable_set(root_state), np.asarray([root_state,root_state]),cost_from_parent=0)
         self.root_id = hash(str(root_state))
         self.state_dim = root_state[0]
         self.compute_reachable_set = compute_reachable_set
@@ -223,7 +226,7 @@ class RGRRTStar:
         self.node_tally = 0
         self.rewire_radius=rewire_radius
 
-    def create_child_node(self, parent_node, child_state,cost_from_parent = None, path_from_parent = None):
+    def create_child_node(self, parent_node, child_state, true_dynamics_path, cost_from_parent = None, path_from_parent = None):
         '''
         Given a child state reachable from a parent node, create a node with that child state
         :param parent_node: parent
@@ -239,12 +242,12 @@ class RGRRTStar:
         cost_from_parent, path_from_parent = parent_node.reachable_set.plan_collision_free_path_in_set(child_state)
 
         # construct a new node
-        new_node = Node(child_state, self.compute_reachable_set(child_state),
+        new_node = Node(child_state, self.compute_reachable_set(child_state), true_dynamics_path,
                         parent=parent_node, path_from_parent=path_from_parent, cost_from_parent=cost_from_parent)
         parent_node.children.add(new_node)
         return new_node
 
-    def extend(self, new_state, nearest_node, explore_deterministic_next_state=True):
+    def extend(self, new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True):
         # check for obstacles
         if explore_deterministic_next_state:
             cost_to_go, path, deterministic_next_state = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state,
@@ -254,10 +257,11 @@ class RGRRTStar:
         #FIXME: Support for partial extensions
         if path is None:
             return False, None
-        new_node = self.create_child_node(nearest_node, new_state, cost_to_go, path)
+        new_node = self.create_child_node(nearest_node, new_state, cost_from_parent=cost_to_go, path_from_parent=path, true_dynamics_path=true_dynamics_path)
         return True, new_node
 
-    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = True, max_nodes_to_add = int(1e9)):
+    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = True, max_nodes_to_add = int(1e9),\
+                                 save_true_dynamics_path = False):
         '''
         Builds a RG-RRT* Tree to solve for the path to a goal.
         :param goal_state:  The goal for the planner.
@@ -271,12 +275,16 @@ class RGRRTStar:
         start = default_timer()
         self.goal_state = goal_state
         # For cases where root node can lead directly to goal
-        if self.root_node.reachable_set.contains_goal(goal_state):
+        contains_goal, true_dynamics_path = self.root_node.reachable_set.contains_goal(self.goal_state)
+        if contains_goal:
             # check for obstacles
-            cost_to_go, path = self.root_node.reachable_set.plan_collision_free_path_in_set(goal_state)
+            # cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
+            # allow for fuzzy goal check
+            # if cost_to_go == np.inf:
+            #     continue
             # if cost_to_go != np.inf:  #allow for fuzzy goal check
                 # add the goal node to the tree
-            goal_node = self.create_child_node(self.root_node, goal_state)
+            goal_node = self.create_child_node(self.root_node, goal_state, true_dynamics_path)
             if rewire:
                 self.rewire(goal_node)
             self.goal_node=goal_node
@@ -308,7 +316,7 @@ class RGRRTStar:
 
                 nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
                 # find the closest state in the reachable set and use it to extend the tree
-                new_state, discard = nearest_node.reachable_set.find_closest_state(random_sample)
+                new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
                 # print(new_state,discard)
                 new_state_id = hash(str(new_state))
                 # add the new node to the set tree if the new node is not already in the tree
@@ -317,13 +325,12 @@ class RGRRTStar:
                     # print('Warning: state already explored')
                     continue  # #sanity check to prevent numerical errors
                 if not explore_deterministic_next_state:
-                    is_extended, new_node = self.extend(new_state, nearest_node)
+                    is_extended, new_node = self.extend(new_state, nearest_node, true_dynamics_path)
                 else:
-                    is_extended, new_node = self.extend(new_state, nearest_node, True)
+                    is_extended, new_node, deterministic_next_state = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True)
                 if not is_extended:
                     # print('Extension failed')
                     continue
-
                 else:
                     sample_is_valid = True
                 #FIXME: potential infinite loop
@@ -344,14 +351,17 @@ class RGRRTStar:
                 if rewire:
                     self.rewire(new_node)
                 #In "find path" mode, if the goal is in the reachable set, we are done
-                if new_node.reachable_set.contains_goal(goal_state): #FIXME: support for goal region
+                contains_goal, true_dynamics_path = new_node.reachable_set.contains_goal(self.goal_state)
+                if contains_goal:
                     # check for obstacles
-                    cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
-                    #allow for fuzzy goal check
+                    # add the goal node to the tree
+                    # cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
+                    # allow for fuzzy goal check
                     # if cost_to_go == np.inf:
                     #     continue
-                    # add the goal node to the tree
-                    goal_node = self.create_child_node(new_node, goal_state)
+                    goal_node = self.create_child_node(new_node, self.goal_state, true_dynamics_path)
+                    diff = np.subtract(self.goal_state, true_dynamics_path)
+                    diff_norm = np.linalg.norm(diff, axis=1)
                     if rewire:
                         self.rewire(goal_node)
                     self.goal_node=goal_node
@@ -388,18 +398,18 @@ class RGRRTStar:
                     if rewire:
                         self.rewire(new_node)
                     #In "find path" mode, if the goal is in the reachable set, we are done
-                    if new_node.reachable_set.contains_goal(goal_state): #FIXME: support for goal region
-                        # check for obstacles
+                    contains_goal, true_dynamics_path = new_node.reachable_set.contains_goal(self.goal_state)
+                    if contains_goal:
+                    # check for obstacles
                         cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
                         #allow for fuzzy goal check
                         # if cost_to_go == np.inf:
                         #     continue
                         # add the goal node to the tree
-                        goal_node = self.create_child_node(new_node, goal_state)
+                        goal_node = self.create_child_node(new_node, self.goal_state, true_dynamics_path)
                         if rewire:
                             self.rewire(goal_node)
                         self.goal_node=goal_node
-
 
     def rewire(self, new_node):
         # rewire_parent_candidate_states = list(self.reachable_set_tree.d_neighbor_ids(new_node.state))

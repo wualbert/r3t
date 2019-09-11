@@ -12,17 +12,19 @@ from datetime import datetime
 import os
 matplotlib.rcParams['font.family'] = "Times New Roman"
 
-global best_distance
+reachable_set_epsilon = 0.5
+goal_tolerance = 5e-2
+input_limit = 1
+input_samples = 9
 
 def test_pendulum_planning():
-    global best_distance
-    best_distance = np.inf
     initial_state = np.zeros(2)
 
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-1],[1]]), m=1, l=0.5, g=9.8, b=0.1)
+    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-input_limit],[input_limit]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
     step_size = 0.2 # 0.075
+    nonlinear_dynamic_step_size=1e-2
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = (rnd[0]-0.5)*2*1.5*np.pi
@@ -49,42 +51,32 @@ def test_pendulum_planning():
         rnd[1] = r*np.sin(theta)
         return rnd
 
-    def big_gaussian_sampler():
-        rnd = np.random.rand(2)
-        rnd[0] = np.random.normal(0,1.5)
-        rnd[1] = np.random.normal(0,3)
-        goal_bias_rnd = np.random.rand(1)
-        if goal_bias_rnd <0.05:
-            return goal_state
-        elif goal_bias_rnd < 0.1:
-            return np.asarray([-np.pi,0.0])
-        return rnd
-
     def contains_goal_function(reachable_set, goal_state):
-        global best_distance
         distance=np.inf
         if np.linalg.norm(reachable_set.parent_state-goal_state)<2:
             distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state)
         elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<2:
             distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state_2)
-        # # if (abs(projection1[0]-goal_state[0])%(2*np.pi)<3e-1 and abs(projection1[1]-goal_state[1])<3e-1) or \
-        # # (abs(projection2[0] - goal_state[0]) % (2 * np.pi) < 3e-1 and abs(projection2[1] - goal_state[1]) < 3e-1):
-        # #     return True
-        # else:
-        #     return False
-        # if distance<2e-1:
-        # goal_diff = reachable_set.parent_state-goal_state
-        # goal_diff[0] %=(2.*np.pi)
-        # if np.linalg.norm(reachable_set.parent_state-goal_state)<5e-1 or \
-        #         np.linalg.norm(reachable_set.parent_state-goal_state_2)<5e-1:
-        #     print(min(np.linalg.norm(reachable_set.parent_state-goal_state),\
-        #               np.linalg.norm(reachable_set.parent_state-goal_state_2)))
-        if best_distance>distance:
-            best_distance=distance
-        if distance<5e-2:
-            # print(goal_diff, np.linalg.norm(goal_diff))
-            return True
-        return False
+        else:
+            return False, None
+        if distance > reachable_set_epsilon:
+            return False, None
+        #enumerate inputs
+        potential_inputs = np.linspace(pendulum_system.input_limits[0,0], pendulum_system.input_limits[1,0], input_samples)
+        for u_i in potential_inputs:
+            state_list = []
+            state=reachable_set.parent_state
+            for step in range(int(step_size/nonlinear_dynamic_step_size)):
+                state = pendulum_system.forward_step(u=np.atleast_1d(u_i), linearlize=False, modify_system=False, step_size = nonlinear_dynamic_step_size, return_as_env = False,
+                     starting_state= state)
+                state_list.append(state)
+                if np.linalg.norm(goal_state-state)<goal_tolerance:
+                    print('Goal error is %d' % np.linalg.norm(goal_state-state))
+                    return True, np.asarray(state_list)
+                if np.linalg.norm(goal_state_2-state)<goal_tolerance:
+                    print('Goal error is %d' % np.linalg.norm(goal_state_2-state))
+                    return True, np.asarray(state_list)
+        return False, None
 
     rrt = SymbolicSystem_RGRRTStar(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function,\
                                    use_true_reachable_set=True, use_convex_hull=True)
@@ -95,7 +87,7 @@ def test_pendulum_planning():
     os.makedirs('RRT_Pendulum_'+experiment_name)
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=False, explore_deterministic_next_state=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True ) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -116,7 +108,6 @@ def test_pendulum_planning():
             else:
                 goal_override = np.asarray([-np.pi, 0.0])
 
-        print('best distance: %f' %best_distance)
         # Plot state tree
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -169,5 +160,5 @@ def test_pendulum_planning():
             break
 
 if __name__=='__main__':
-    for i in range(10):
+    for i in range(1):
         test_pendulum_planning()
