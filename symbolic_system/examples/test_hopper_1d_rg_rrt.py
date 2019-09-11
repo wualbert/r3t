@@ -5,19 +5,24 @@ from polytope_symbolic_system.examples.hopper_1d import Hopper_1d
 from rg_rrt_star.symbolic_system.symbolic_system_basic_rrt import SymbolicSystem_RGRRT
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from pypolycontain.lib.operations import distance_point_polytope
-from rg_rrt_star.utils.visualization import visualize_node_tree_2D
+from rg_rrt_star.utils.visualization import visualize_node_tree_2D_old
 import time
 from datetime import datetime
 import os
 
+global best_distance
+
 def test_hopper_1d_planning():
+    global best_distance
+    best_distance=np.inf
+
     initial_state = np.asarray([2.,0.])
     l = 1
     p = 0.1
     step_size = 0.04
-    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=25)
+    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=20)
     goal_state = np.asarray([3,0.0])
-    goal_tolerance = 2e-2
+    goal_tolerance = 5e-2
     def uniform_basic_sampler():
         rnd = np.random.rand(2)
         rnd[0] = rnd[0] * 5
@@ -64,7 +69,9 @@ def test_hopper_1d_planning():
             return rnd
 
     def reached_goal_function(state, goal_state):
+        global best_distance
         distance = np.linalg.norm(state-goal_state)
+        best_distance = min(distance, best_distance)
         if distance<goal_tolerance:
             print(distance, goal_tolerance)
             return True
@@ -111,9 +118,11 @@ def test_hopper_1d_planning():
         if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
+        print("Best distance %f" %best_distance)
+
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
+        fig, ax = visualize_node_tree_2D_old(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
         # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
@@ -122,13 +131,15 @@ def test_hopper_1d_planning():
         # ax.set_aspect('equal')
         plt.plot([l+p, l+p], [-7,7], 'm--', lw=1.5)
         plt.plot([l, l], [-7,7], 'b--', lw=1.5)
-        plt.xlim([0.5,4])
-
+        plt.xlim([0,4])
+        plt.ylim([-8,8])
         # ax.set_xlim(left=0)
-        plt.xlabel('$x$')
-        plt.ylabel('$\dot{x}$')
+        ax.grid(True, which='both')
+        # ax.set_xlim(left=0)
+        plt.xlabel('$x(m)$')
+        plt.ylabel('$\dot{x}(m/s)$')
         duration += (end_time-start_time)
-        plt.title('RG RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.title('RRT after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
         plt.savefig('RG_RRT_Hopper_1d_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
         # plt.show()
         plt.clf()

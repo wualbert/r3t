@@ -248,6 +248,14 @@ class RGRRTStar:
         return new_node
 
     def extend(self, new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True):
+        """
+
+        :param new_state:
+        :param nearest_node:
+        :param true_dynamics_path:
+        :param explore_deterministic_next_state:
+        :return: is_extended, new_node, deterministic_next_state
+        """
         # check for obstacles
         if explore_deterministic_next_state:
             cost_to_go, path, deterministic_next_state = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state,
@@ -256,9 +264,15 @@ class RGRRTStar:
             cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
         #FIXME: Support for partial extensions
         if path is None:
-            return False, None
+            if explore_deterministic_next_state:
+                return False, None, None
+            else:
+                return False, None
         new_node = self.create_child_node(nearest_node, new_state, cost_from_parent=cost_to_go, path_from_parent=path, true_dynamics_path=true_dynamics_path)
-        return True, new_node
+        if explore_deterministic_next_state:
+            return True, new_node, deterministic_next_state
+        else:
+            return True, new_node
 
     def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = True, max_nodes_to_add = int(1e9),\
                                  save_true_dynamics_path = False):
@@ -368,6 +382,7 @@ class RGRRTStar:
             else:
                 nodes_to_add = [new_node]
                 iteration_count=0
+                true_dynamics_path = list(true_dynamics_path)
                 while iteration_count<max_nodes_to_add:
                     # No longer deterministic
                     if new_node.reachable_set.deterministic_next_state is None:
@@ -375,7 +390,9 @@ class RGRRTStar:
                     # Already added
                     if hash(str(new_node.reachable_set.deterministic_next_state)) in self.state_to_node_map:
                         break
-                    is_extended, new_node = self.extend(new_node.reachable_set.deterministic_next_state, new_node)
+                    true_dynamics_path.append(new_node.reachable_set.deterministic_next_state)
+                    is_extended, new_node,deterministic_next_state = self.extend(new_node.reachable_set.deterministic_next_state, \
+                                                                                 new_node, true_dynamics_path=true_dynamics_path,explore_deterministic_next_state=True)
                     if not is_extended:  # extension failed
                         break
                     nodes_to_add.append(new_node)
