@@ -84,10 +84,10 @@ def test_pendulum_planning():
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
     duration = 0
-    os.makedirs('RRT_Pendulum_'+experiment_name)
+    os.makedirs('R3T_Pendulum_'+experiment_name)
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 15, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True ) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 30, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True ) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -128,8 +128,8 @@ def test_pendulum_planning():
         ax.set_ylabel('$\dot{\\theta} (rad/s)$')
 
         duration += (end_time-start_time)
-        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
-        plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
+        plt.title('R3T after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
+        plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
         # plt.show()
         plt.xlim([-4, 4])
         plt.ylim([-10,10])
@@ -160,5 +160,5 @@ def test_pendulum_planning():
             break
 
 if __name__=='__main__':
-    for i in range(1):
+    for i in range(10):
         test_pendulum_planning()

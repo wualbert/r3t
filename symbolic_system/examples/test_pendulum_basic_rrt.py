@@ -111,7 +111,7 @@ def test_pendulum_planning():
         plt.ylim([-10,10])
         plt.clf()
         plt.close()
-
+        print('Done plotting')
         if found_goal:
             break
 
