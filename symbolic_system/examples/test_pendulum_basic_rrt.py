@@ -58,7 +58,7 @@ def test_pendulum_planning():
 
     def reached_goal_function(state, goal_state):
         if np.linalg.norm(state-goal_state)<5e-2 or np.linalg.norm(state-goal_state_2)<5e-2:
-            print('Goal error %f' %min(np.linalg.norm(state-goal_state), np.linalg.norm(state-goal_state)))
+            print('Goal error %f' %min(np.linalg.norm(state-goal_state), np.linalg.norm(state-goal_state_2)))
             return True
         return False
 
