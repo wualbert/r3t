@@ -79,7 +79,6 @@ class PolytopeReachableSet(ReachableSet):
         '''
         distance = np.inf
         closest_point = None
-        mode = None
         p_used = None
         try:
             #use AABB to upper bound distance
@@ -88,7 +87,6 @@ class PolytopeReachableSet(ReachableSet):
                 dmax = point_to_box_dmax(query_point, aabb)
                 if dmax < min_dmax:
                     min_dmax = dmax
-
             for i, p in enumerate(self.polytope_list):
                 #ignore polytopes that are impossible
                 if point_to_box_distance(query_point, self.aabb_list[i]) > min_dmax:
@@ -97,12 +95,10 @@ class PolytopeReachableSet(ReachableSet):
                 if d<distance:
                     distance = d
                     closest_point = proj
-                    mode = i
                     p_used = p
             assert closest_point is not None
         except TypeError:
             closest_point = distance_point_polytope(self.polytope_list, query_point, ball='l2')[1]
-            mode = None
             p_used = self.polytope_list
         if np.linalg.norm(closest_point-self.parent_state)<self.epsilon:
             if save_true_dynamics_path:
@@ -110,7 +106,7 @@ class PolytopeReachableSet(ReachableSet):
             return np.ndarray.flatten(closest_point), True, np.asarray([self.parent_state, np.ndarray.flatten(closest_point)])
         if self.use_true_reachable_set and self.reachable_set_step_size:
             #solve for the control input that leads to this state
-            current_linsys = self.sys.get_linearization(self.parent_state, mode=mode)
+            current_linsys = self.sys.get_linearization(self.parent_state) #FIXME: does mode need to be specified?
             u = np.dot(np.linalg.pinv(current_linsys.B*self.reachable_set_step_size), \
                        (np.ndarray.flatten(closest_point)-np.ndarray.flatten(self.parent_state)-\
                         self.reachable_set_step_size*(np.dot(current_linsys.A, self.parent_state)+\
@@ -123,6 +119,7 @@ class PolytopeReachableSet(ReachableSet):
                 state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
                      starting_state= state)
                 state_list.append(state)
+
                 # print step,state
             # print(state, closest_point)
             if save_true_dynamics_path:

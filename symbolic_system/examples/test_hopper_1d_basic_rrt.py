@@ -19,8 +19,8 @@ def test_hopper_1d_planning():
     initial_state = np.asarray([2.,0.])
     l = 1
     p = 0.1
-    step_size = 0.04
-    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=20)
+    step_size = 0.01
+    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=50)
     goal_state = np.asarray([3,0.0])
     goal_tolerance = 5e-2
     def uniform_basic_sampler():
@@ -49,6 +49,7 @@ def test_hopper_1d_planning():
         if np.random.rand(1) > gaussian_ratio:
             return uniform_sampler()
         return rnd
+
 
     def action_space_mixture_sampler():
         action_space_ratio = 0.08
@@ -106,7 +107,7 @@ def test_hopper_1d_planning():
             return True
         return False
 
-    rrt = SymbolicSystem_Basic_RRT(hopper_system, uniform_basic_sampler, step_size, reached_goal_function=reached_goal_function)
+    rrt = SymbolicSystem_Basic_RRT(hopper_system, gaussian_mixture_sampler, step_size, reached_goal_function=reached_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -115,7 +116,7 @@ def test_hopper_1d_planning():
     max_iterations = 100
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 30, rewire=True, explore_deterministic_next_state=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
         print("Best distance %f" %best_distance)

@@ -5,7 +5,7 @@ from polytope_symbolic_system.examples.hopper_1d import Hopper_1d
 from rg_rrt_star.symbolic_system.symbolic_system_basic_rrt import SymbolicSystem_RGRRT
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from pypolycontain.lib.operations import distance_point_polytope
-from rg_rrt_star.utils.visualization import visualize_node_tree_2D_old
+from rg_rrt_star.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
 import os
@@ -20,12 +20,12 @@ def test_hopper_1d_planning():
     l = 1
     p = 0.1
     step_size = 0.04
-    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=20)
+    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=30)
     goal_state = np.asarray([3,0.0])
     goal_tolerance = 5e-2
     def uniform_basic_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = rnd[0] * 5
+        rnd[0] = rnd[0] * 5-.5
         rnd[1] = (rnd[1] - 0.5) * 4 * 5
         goal_bias = np.random.rand(1)
         if goal_bias < 0.25:
@@ -34,8 +34,8 @@ def test_hopper_1d_planning():
 
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = rnd[0]*2
-        rnd[1] = (rnd[1]-0.5)*4*5
+        rnd[0] = rnd[0]*5-0.5
+        rnd[1] = (rnd[1]-0.5)*2*10
         goal_bias = np.random.rand(1)
         if goal_bias<0.25:
             return goal_state
@@ -43,9 +43,9 @@ def test_hopper_1d_planning():
 
     def gaussian_mixture_sampler():
         gaussian_ratio = 0.4
-        rnd = np.random.rand(2)
-        rnd[0] = np.random.normal(l+0.5*p,2*p)
-        rnd[1] = (np.random.rand(1)-0.5)*2*4
+        rnd = np.zeros(2)
+        rnd[0] = np.random.normal(l+0.5*p,3*p)
+        rnd[1] = (np.random.rand(1)-0.5)*2*10
         if np.random.rand(1) > gaussian_ratio:
             return uniform_sampler()
         return rnd
@@ -122,7 +122,7 @@ def test_hopper_1d_planning():
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        fig, ax = visualize_node_tree_2D_old(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
+        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
         # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
