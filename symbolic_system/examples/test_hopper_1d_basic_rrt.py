@@ -20,7 +20,7 @@ def test_hopper_1d_planning():
     l = 1
     p = 0.1
     step_size = 0.01
-    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state, f_max=50)
+    hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state)
     goal_state = np.asarray([3,0.0])
     goal_tolerance = 5e-2
     def uniform_basic_sampler():

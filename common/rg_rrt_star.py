@@ -392,7 +392,7 @@ class RGRRTStar:
                         break
                     true_dynamics_path.append(new_node.reachable_set.deterministic_next_state)
                     is_extended, new_node,deterministic_next_state = self.extend(new_node.reachable_set.deterministic_next_state, \
-                                                                                 new_node, true_dynamics_path=true_dynamics_path,explore_deterministic_next_state=True)
+                                                                                 new_node, true_dynamics_path=true_dynamics_path[1:],explore_deterministic_next_state=True)
                     if not is_extended:  # extension failed
                         break
                     nodes_to_add.append(new_node)
