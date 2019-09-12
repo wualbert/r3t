@@ -38,6 +38,9 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_
             #FIXME: make this cleaner
             goal_lines.append([goal_override, np.ndarray.flatten(node.parent.state)])
             node = node.parent
+        else:
+            goal_lines.append([rrt.goal_node.state, np.ndarray.flatten(node.parent.state)])
+            node = node.parent
         while node.parent is not None:
             for i in range(len(node.true_dynamics_path)-1):
                 goal_lines.append([np.ndarray.flatten(node.true_dynamics_path[i]), np.ndarray.flatten(node.true_dynamics_path[i+1])])

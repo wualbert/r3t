@@ -46,13 +46,13 @@ class SymbolicSystem_RGRRT(RGRRT):
                 state = np.atleast_1d(nearest_state)
                 for step in range(int(self.step_size / self.nonlinear_dynamics_step_size)):
                     state = self.sys.forward_step(starting_state = state, u=np.atleast_1d(input), \
-                                                  modify_system=False, return_as_env=False, step_size=self.step_size/self.nonlinear_dynamics_step_size)
+                                                  modify_system=False, return_as_env=False, step_size=self.nonlinear_dynamics_step_size)
                     states_list.append(state)
                 new_distance = np.linalg.norm(new_state - state)
                 # print(new_distance)
                 if new_distance<best_distance:
                     best_input=input
-                    best_new_state=copy.copy(state)
+                    best_new_state=state
                     best_distance=new_distance
                     best_states_list = states_list
             return best_distance, best_new_state, best_states_list

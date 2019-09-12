@@ -73,7 +73,6 @@ def test_hopper_1d_planning():
         distance = np.linalg.norm(state-goal_state)
         best_distance = min(distance, best_distance)
         if distance<goal_tolerance:
-            print(distance, goal_tolerance)
             return True
         return False
 
@@ -102,7 +101,6 @@ def test_hopper_1d_planning():
                     projection = proj
                     distance = d
         if distance<goal_tolerance:
-            print(distance, goal_tolerance)
             return True
         return False
 

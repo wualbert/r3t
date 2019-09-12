@@ -313,7 +313,7 @@ class RGRRT(BasicRRT):
 
     def extend(self, new_state, nearest_node, explore_deterministic_next_state=False):
         # test for possibility to extend
-        cost_to_go, end_state,best_states_list = self.plan_collision_free_path_towards(nearest_node.state, new_state)
+        cost_to_go, end_state, best_states_list = self.plan_collision_free_path_towards(nearest_node.state, new_state)
         if end_state is None:
             return False, None
         new_node = self.create_child_node(nearest_node, end_state, cost_to_go, end_state, true_dynamics_path=best_states_list)
