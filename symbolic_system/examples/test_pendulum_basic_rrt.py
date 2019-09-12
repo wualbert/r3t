@@ -104,7 +104,7 @@ def test_pendulum_planning():
         ax.set_ylabel('$\dot{\\theta} (rad/s)$')
 
         duration += (end_time-start_time)
-        plt.title('Kinodynamic RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
         plt.savefig('Basic_RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
         # plt.show()
         plt.xlim([-4, 4])

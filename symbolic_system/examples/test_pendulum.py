@@ -11,10 +11,11 @@ import time
 from datetime import datetime
 import os
 matplotlib.rcParams['font.family'] = "Times New Roman"
+matplotlib.rcParams.update({'font.size': 14})
 
 reachable_set_epsilon = 0.5
 goal_tolerance = 5e-2
-input_limit = 1
+input_limit = 0.25
 input_samples = 9
 
 def test_pendulum_planning():
@@ -85,9 +86,10 @@ def test_pendulum_planning():
 
     duration = 0
     os.makedirs('R3T_Pendulum_'+experiment_name)
+    allocated_time = 5
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 30, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True ) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=False, allocated_time= allocated_time, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -108,57 +110,60 @@ def test_pendulum_planning():
             else:
                 goal_override = np.asarray([-np.pi, 0.0])
 
-        # Plot state tree
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, goal_override=goal_override)
-        # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
-        # for explored_state in explored_states:
-        #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
-        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
-        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
-        ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
-        ax.grid(True, which='both')
-        y_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
-        ax.yaxis.set_major_formatter(y_formatter)
-        ax.set_yticks(np.arange(-10, 10, 2))
-        ax.set_xlim([-4, 4])
-        ax.set_ylim([-10, 10])
-        ax.set_xlabel('$\\theta (rad)$')
-        ax.set_ylabel('$\dot{\\theta} (rad/s)$')
-
+        # # Plot state tree
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, goal_override=goal_override)
+        # # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
+        # # for explored_state in explored_states:
+        # #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
+        # ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
+        # ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
+        # ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
+        # ax.grid(True, which='both')
+        # y_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
+        # ax.yaxis.set_major_formatter(y_formatter)
+        # ax.set_yticks(np.arange(-10, 10, 2))
+        # ax.set_xlim([-4, 4])
+        # ax.set_ylim([-10, 10])
+        # ax.set_xlabel('$\\theta (rad)$')
+        # ax.set_ylabel('$\dot{\\theta} (rad/s)$')
+        #
         duration += (end_time-start_time)
-        plt.title('R3T after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
-        plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
-        # plt.show()
-        plt.xlim([-4, 4])
-        plt.ylim([-10,10])
-        plt.clf()
-        plt.close()
+        # plt.title('R3T after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
+        # plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
+        # # plt.show()
+        # plt.xlim([-4, 4])
+        # plt.ylim([-10,10])
+        # plt.clf()
+        # plt.close()
 
         #
         # # # Plot explored reachable sets
         # # FIXME: Handle degenerated reachable set
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111)
-        # fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01)
-        #
-        # ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
-        # ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
-        # ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
-        #
-        # # ax.set_aspect('equal')
-        # plt.xlabel('$x$')
-        # plt.ylabel('$\dot{x}$')
-        # plt.title('R3T Tree after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
-        # plt.savefig('RRT_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
-        # # plt.show()
-        # plt.clf()
-        # # plt.close()
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01)
 
-        if found_goal:
-            break
+        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
+        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
+        ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
 
+        # ax.set_aspect('equal')
+        plt.xlabel('$x$')
+        plt.ylabel('$\dot{x}$')
+        plt.xlim([-4, 4])
+        plt.ylim([-10,10])
+        plt.tight_layout()
+        plt.title('$|u| \leq %.2f$ Reachable Set after %.2fs (%d nodes)' %(input_limit, duration, len(polytope_reachable_sets)))
+        plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
+        # plt.show()
+        plt.clf()
+        # plt.close()
+        #
+        # if found_goal:
+        #     break
+        allocated_time*=5
 if __name__=='__main__':
-    for i in range(10):
+    for i in range(1):
         test_pendulum_planning()

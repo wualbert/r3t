@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.hopper_1d import Hopper_1d
 from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
-from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
+from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope
 from pypolycontain.lib.operations import distance_point_polytope
 from rg_rrt_star.utils.visualization import visualize_node_tree_2D
 import time
@@ -12,7 +12,6 @@ from datetime import datetime
 import os
 matplotlib.rcParams['font.family'] = "Times New Roman"
 
-reachable_set_epsilon = 0.5
 input_samples = 9
 nonlinear_dynamic_step_size = 1e-2
 
@@ -88,30 +87,30 @@ def test_hopper_1d_planning():
             #     if np.linalg.norm(crosstrack_vec)<distance and 0.<=vec_dot<=vec_to_reachable_set_norm:
             #         distance = np.linalg.norm(crosstrack_vec)
             # else:
-                d, proj = distance_point_polytope(p, goal_state)
+                d, proj = distance_point_polytope(p, goal_state,ball='l2')
                 if d<distance:
                     projection = proj
                     distance = d
-        if distance<0.5:
-            # enumerate inputs
-            potential_inputs = np.linspace(hopper_system.input_limits[0, 0], hopper_system.input_limits[1, 0],
-                                           input_samples)
-            for u_i in potential_inputs:
-                state_list = []
-                state = reachable_set.parent_state
-                for step in range(int(step_size / nonlinear_dynamic_step_size)):
-                    state = hopper_system.forward_step(u=np.atleast_1d(u_i), linearlize=False, modify_system=False,
-                                                         step_size=nonlinear_dynamic_step_size, return_as_env=False,
-                                                         starting_state=state)
-                    state_list.append(state)
-                    distance = np.linalg.norm(goal_state-state)
-                    best_distance = min(distance, best_distance)
-                    if distance < goal_tolerance:
-                        print('Goal error is %f' % np.linalg.norm(goal_state - state))
-                        return True, np.asarray(state_list)
+        # if distance<0.5:
+        #     # enumerate inputs
+        #     potential_inputs = np.linspace(hopper_system.input_limits[0, 0], hopper_system.input_limits[1, 0],
+        #                                    input_samples)
+        #     for u_i in potential_inputs:
+        #         state_list = []
+        #         state = reachable_set.parent_state
+        #         for step in range(int(step_size / nonlinear_dynamic_step_size)):
+        #             state = hopper_system.forward_step(u=np.atleast_1d(u_i), linearlize=False, modify_system=False,
+        #                                                  step_size=nonlinear_dynamic_step_size, return_as_env=False,
+        #                                                  starting_state=state)
+        #             state_list.append(state)
+        #             distance = np.linalg.norm(goal_state-state)
+        best_distance = min(distance, best_distance)
+        if distance < goal_tolerance:
+            print('Goal error is %f' % distance)
+            return True, [reachable_set.parent_state, goal_state]
         return False, None
 
-    rrt = SymbolicSystem_RGRRTStar(hopper_system, gaussian_mixture_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = SymbolicSystem_RGRRTStar(hopper_system, gaussian_mixture_sampler, step_size, contains_goal_function=contains_goal_function,use_convex_hull=True)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
@@ -157,6 +156,29 @@ def test_hopper_1d_planning():
         # plt.show()
         plt.clf()
         plt.close()
+
+        # # # Plot explored reachable sets
+        # # FIXME: Handle degenerated reachable set
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01)
+
+        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
+        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
+        ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
+
+        # ax.set_aspect('equal')
+        plt.xlabel('$x$')
+        plt.ylabel('$\dot{x}$')
+        plt.xlim([0,4])
+        plt.ylim([-8,8])
+        plt.tight_layout()
+        plt.title('Reachable Set after %.2fs (%d nodes)' %(duration, len(polytope_reachable_sets)))
+        plt.savefig('R3T_Hopper_1d_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
+        # plt.show()
+        plt.clf()
+
+
         if found_goal:
             break
 

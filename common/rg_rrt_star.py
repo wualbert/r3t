@@ -339,7 +339,7 @@ class RGRRTStar:
                     # print('Warning: state already explored')
                     continue  # #sanity check to prevent numerical errors
                 if not explore_deterministic_next_state:
-                    is_extended, new_node = self.extend(new_state, nearest_node, true_dynamics_path)
+                    is_extended, new_node = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=False)
                 else:
                     is_extended, new_node, deterministic_next_state = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True)
                 if not is_extended:
