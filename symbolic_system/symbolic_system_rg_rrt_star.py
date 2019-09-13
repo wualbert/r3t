@@ -266,11 +266,12 @@ class SymbolicSystem_RGRRTStar(RGRRTStar):
                 reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size, use_convex_hull=use_convex_hull)
                 if np.all(self.sys.get_linearization(state=state).B == 0):
                     if use_true_reachable_set:
+                        deterministic_next_state=[state]
                         for step in range(int(self.step_size / nonlinear_dynamic_step_size)):
                             state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=nonlinear_dynamic_step_size)
-                        deterministic_next_state = state
+                        deterministic_next_state.append(state)
                     else:
-                        deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
+                        deterministic_next_state = [state, self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)]
                 return PolytopeReachableSet(state,reachable_set_polytope, sys=self.sys, contains_goal_function=self.contains_goal_function, \
                                             deterministic_next_state=deterministic_next_state, reachable_set_step_size=self.step_size, use_true_reachable_set=use_true_reachable_set,\
                                             nonlinear_dynamic_step_size=nonlinear_dynamic_step_size)

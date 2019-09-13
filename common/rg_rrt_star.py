@@ -386,11 +386,10 @@ class RGRRTStar:
                     if new_node.reachable_set.deterministic_next_state is None:
                         break
                     # Already added
-                    if hash(str(new_node.reachable_set.deterministic_next_state)) in self.state_to_node_map:
+                    if hash(str(new_node.reachable_set.deterministic_next_state[-1])) in self.state_to_node_map:
                         break
-                    true_dynamics_path=[new_node.reachable_set.parent_state, new_node.reachable_set.deterministic_next_state]
-                    is_extended, new_node,deterministic_next_state = self.extend(new_node.reachable_set.deterministic_next_state, \
-                                                                                 new_node, true_dynamics_path=true_dynamics_path,explore_deterministic_next_state=True)
+                    is_extended, new_node,deterministic_next_state = self.extend(new_node.reachable_set.deterministic_next_state[-1], \
+                                                                                 new_node, true_dynamics_path=deterministic_next_state,explore_deterministic_next_state=True)
                     if not is_extended:  # extension failed
                         break
                     nodes_to_add.append(new_node)
