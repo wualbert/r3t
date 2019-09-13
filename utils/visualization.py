@@ -20,7 +20,7 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_
             state = np.ndarray.flatten(node.state)
         if goal_override is not None and node==rrt.goal_node:
             lines.append([state, goal_override])
-        elif node == rrt.root_node:
+        elif node == rrt.root_node or node==rrt.goal_node:
             pass
         else:
             for i in range(len(node.true_dynamics_path)-1):

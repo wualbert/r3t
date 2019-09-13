@@ -1,6 +1,5 @@
 import pydrake
 from rg_rrt_star.common.basic_rrt import *
-import copy
 class SymbolicSystem_Basic_RRT(BasicRRT):
     def __init__(self, sys, sampler, step_size, reached_goal_function):
         self.sys = sys
@@ -65,7 +64,7 @@ class SymbolicSystem_RGRRT(RGRRT):
         true_dynamics_paths = []
         for input in possible_inputs:
             state_list = [state]
-            s = copy.deepcopy(state)
+            s = state
             for i in range(int(self.step_size/self.nonlinear_dynamics_step_size)):
                 s = self.sys.forward_step(starting_state=np.atleast_1d(s),
                                                         u=np.atleast_1d(input), modify_system=False,

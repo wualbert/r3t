@@ -274,7 +274,7 @@ class RGRRTStar:
         else:
             return True, new_node
 
-    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = True, max_nodes_to_add = int(1e9),\
+    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = True, max_nodes_to_add = int(1e3),\
                                  save_true_dynamics_path = False):
         '''
         Builds a RG-RRT* Tree to solve for the path to a goal.
@@ -327,17 +327,16 @@ class RGRRTStar:
                 # map the states to nodes
                 nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1))  # FIXME: necessary to cast to list?
                 discard = True
-
                 nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
                 # find the closest state in the reachable set and use it to extend the tree
                 new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
-                # print(new_state,discard)
                 new_state_id = hash(str(new_state))
                 # add the new node to the set tree if the new node is not already in the tree
                 if new_state_id in self.state_to_node_map:
                     # FIXME: how to prevent repeated state exploration?
                     # print('Warning: state already explored')
                     continue  # #sanity check to prevent numerical errors
+
                 if not explore_deterministic_next_state:
                     is_extended, new_node = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=False)
                 else:
@@ -348,7 +347,8 @@ class RGRRTStar:
                 else:
                     sample_is_valid = True
                 #FIXME: potential infinite loop
-            # print('sample count', sample_count)
+            if sample_count>100:
+                print('Warning: sample count %d' %sample_count)
             if not explore_deterministic_next_state:
                 self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
                 self.state_tree.insert(new_state_id, new_node.state)
@@ -381,23 +381,19 @@ class RGRRTStar:
                     self.goal_node=goal_node
             else:
                 nodes_to_add = [new_node]
-                iteration_count=0
-                true_dynamics_path = list(true_dynamics_path)
-                while iteration_count<max_nodes_to_add:
+                for iteration_count in range(int(max_nodes_to_add)):
                     # No longer deterministic
                     if new_node.reachable_set.deterministic_next_state is None:
                         break
                     # Already added
                     if hash(str(new_node.reachable_set.deterministic_next_state)) in self.state_to_node_map:
                         break
-                    true_dynamics_path.append(new_node.reachable_set.deterministic_next_state)
+                    true_dynamics_path=[new_node.reachable_set.parent_state, new_node.reachable_set.deterministic_next_state]
                     is_extended, new_node,deterministic_next_state = self.extend(new_node.reachable_set.deterministic_next_state, \
-                                                                                 new_node, true_dynamics_path=true_dynamics_path[1:],explore_deterministic_next_state=True)
+                                                                                 new_node, true_dynamics_path=true_dynamics_path,explore_deterministic_next_state=True)
                     if not is_extended:  # extension failed
                         break
                     nodes_to_add.append(new_node)
-                    iteration_count+=1
-                # print('%d nodes to add' %len(nodes_to_add))
                 for new_node in nodes_to_add:
                     new_state_id = hash(str(new_node.state))
                     try:

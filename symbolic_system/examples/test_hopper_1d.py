@@ -22,16 +22,16 @@ def test_hopper_1d_planning():
     initial_state = np.asarray([2.,0.])
     l = 1
     p = 0.1
-    step_size = 1e-2
+    step_size = 4e-2
     hopper_system = Hopper_1d(l=l, p=p, initial_state= initial_state)
     goal_state = np.asarray([3,0.0])
     goal_tolerance = 5e-2
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = rnd[0]*5-0.5
+        rnd[0] = rnd[0]*5+0.5
         rnd[1] = (rnd[1]-0.5)*2*10
         goal_bias = np.random.rand(1)
-        if goal_bias<0.25:
+        if goal_bias<0.1:
             return goal_state
         return rnd
 
@@ -118,7 +118,7 @@ def test_hopper_1d_planning():
             return True, [reachable_set.parent_state, goal_state]
         return False, None
 
-    rrt = SymbolicSystem_RGRRTStar(hopper_system, action_space_mixture_sampler, step_size, contains_goal_function=contains_goal_function,use_convex_hull=True,\
+    rrt = SymbolicSystem_RGRRTStar(hopper_system, gaussian_mixture_sampler, step_size, contains_goal_function=contains_goal_function,use_convex_hull=True,\
                                    use_true_reachable_set=True)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
@@ -128,7 +128,7 @@ def test_hopper_1d_planning():
     max_iterations = 100
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 30, rewire=False, explore_deterministic_next_state=True,save_true_dynamics_path =True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 30, rewire=False, explore_deterministic_next_state=True,save_true_dynamics_path =False) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -166,26 +166,26 @@ def test_hopper_1d_planning():
         plt.clf()
         plt.close()
 
-        # # # Plot explored reachable sets
-        # # FIXME: Handle degenerated reachable set
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01)
-
-        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
-        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
-        ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
-
-        # ax.set_aspect('equal')
-        plt.xlabel('$x$')
-        plt.ylabel('$\dot{x}$')
-        plt.xlim([0,4])
-        plt.ylim([-8,8])
-        plt.tight_layout()
-        plt.title('Reachable Set after %.2fs (%d nodes)' %(duration, len(polytope_reachable_sets)))
-        plt.savefig('R3T_Hopper_1d_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
-        # plt.show()
-        plt.clf()
+        # # # # Plot explored reachable sets
+        # # # FIXME: Handle degenerated reachable set
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01)
+        #
+        # ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
+        # ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
+        # ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
+        #
+        # # ax.set_aspect('equal')
+        # plt.xlabel('$x$')
+        # plt.ylabel('$\dot{x}$')
+        # plt.xlim([0,4])
+        # plt.ylim([-8,8])
+        # plt.tight_layout()
+        # plt.title('Reachable Set after %.2fs (%d nodes)' %(duration, len(polytope_reachable_sets)))
+        # plt.savefig('R3T_Hopper_1d_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
+        # # plt.show()
+        # plt.clf()
 
 
         if found_goal:
