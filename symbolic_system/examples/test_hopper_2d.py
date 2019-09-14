@@ -275,8 +275,13 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., -0.1, 0, 1.5, 0.
         # plt.plot([l+p, l+p], [-2.5, 2.5], 'm--', lw=1.5)
         #plot goal
         plt.plot([goal_state[0],goal_state[0]], [ax.get_ylim()[0],ax.get_ylim()[1]], 'g--', lw=1.5)
+        # plot ground
+        current_xlim = ax.get_xlim()
+        x_samples = np.linspace(ax.get_xlim()[0]-1, ax.get_xlim()[1]+1)
+        vec_ground = np.vectorize(ground_height_function)
+        ax.plot(x_samples, vec_ground(x_samples),'-',linewidth=3,markersize=10, color='saddlebrown', alpha=0.5)
 
-        # ax.set_xlim(left=0)
+        ax.set_xlim(current_xlim)
         plt.xlabel('$x_0$')
         plt.ylabel('$y_0$')
         duration += (end_time-start_time)

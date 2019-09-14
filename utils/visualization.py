@@ -244,11 +244,6 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
         lc = mc.LineCollection(lines, linewidths=linewidths, colors='gray')
         ax.add_collection(lc)
     if show_body_attitude:
-        # plot ground
-        x_samples = np.linspace(ax.get_xlim()[0]-2, ax.get_xlim()[1]+2)
-        print(ax.get_xlim())
-        vec_ground = np.vectorize(ground_height_function)
-        ax.plot(x_samples, vec_ground(x_samples),'-',linewidth=3,markersize=10, color='saddlebrown', alpha=0.3)
         for i, n in enumerate(nodes_to_visualize):
             # fig, ax = hopper_plot(n.state, fig, ax, alpha=0.5/len(nodes_to_visualize)*i+0.1)
             fig, ax = hopper_plot(n.state, fig, ax, alpha=0.15, scaling_factor=scaling_factor)
