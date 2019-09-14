@@ -7,7 +7,7 @@ Warning: support for `box_world` and `dubins_car` has been temporarily dropped a
 The repository requires [`PyDrake with Gurobi`](https://drake.mit.edu/python_bindings.html), [`closest_polytope_algorithms`](https://github.com/wualbert/closest_polytope_algorithms.git), and [`polytope_symbolic_system`](https://github.com/wualbert/closest_polytope_algorithms.git) to run.
 
 #### Installation
-After installing [`PyDrake with Gurobi`](https://drake.mit.edu/python_bindings.html), clone [`closest_polytope_algorithms`](https://github.com/wualbert/closest_polytope_algorithms.git), and [`polytope_symbolic_system`](https://github.com/wualbert/closest_polytope_algorithms.git) to the same directory level as `r3t`.
+After installing [`PyDrake with Gurobi`](https://drake.mit.edu/python_bindings.html), clone [`closest_polytope_algorithms`](https://github.com/wualbert/closest_polytope_algorithms.git) and [`polytope_symbolic_system`](https://github.com/wualbert/closest_polytope_algorithms.git) to the same directory level as `r3t`.
 
 #### Running an example
 All examples are located in the respective `/test` folders of each problem setup.
