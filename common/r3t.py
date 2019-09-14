@@ -199,7 +199,7 @@ class StateTree:
         '''
         raise('NotImplementedError')
 
-class RGRRTStar:
+class R3T:
     def __init__(self, root_state, compute_reachable_set, sampler, reachable_set_tree, state_tree, path_class, rewire_radius = None):
         '''
         Base RG-RRT*

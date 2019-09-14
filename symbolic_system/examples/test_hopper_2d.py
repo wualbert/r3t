@@ -95,7 +95,7 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
     #     closest_point = np.ndarray.flatten(closest_point)
     #     return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
 
-class Hopper2D_RGRRTStar(SymbolicSystem_RGRRTStar):
+class Hopper2D_RGRRTStar(SymbolicSystem_R3T):
     def __init__(self, sys, sampler, step_size, contains_goal_function = None):
         self.sys = sys
         self.step_size = step_size
@@ -118,7 +118,7 @@ class Hopper2D_RGRRTStar(SymbolicSystem_RGRRTStar):
             if np.all(abs(self.sys.get_linearization(state=state).B)<= 1e-5):
                 deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
             return Hopper2D_ReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
-        SymbolicSystem_RGRRTStar.__init__(self, sys, sampler, step_size, contains_goal_function, compute_reachable_set)
+        SymbolicSystem_R3T.__init__(self, sys, sampler, step_size, contains_goal_function, compute_reachable_set)
 
 def test_hopper_2d_planning():
     initial_state = np.asarray([0., 1., 0.1, 0, 4, 0., 0., 0., 0., 0.])

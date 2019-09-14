@@ -3,7 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.hopper_1d import Hopper_1d
-from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
+from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_R3T
 from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope
 from pypolycontain.lib.operations import distance_point_polytope
 from rg_rrt_star.utils.visualization import visualize_node_tree_2D
@@ -118,8 +118,8 @@ def test_hopper_1d_planning():
             return True, [reachable_set.parent_state, goal_state]
         return False, None
 
-    rrt = SymbolicSystem_RGRRTStar(hopper_system, gaussian_mixture_sampler, step_size, contains_goal_function=contains_goal_function,use_convex_hull=True,\
-                                   use_true_reachable_set=True)
+    rrt = SymbolicSystem_R3T(hopper_system, gaussian_mixture_sampler, step_size, contains_goal_function=contains_goal_function, use_convex_hull=True, \
+                             use_true_reachable_set=True)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
