@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 import os
 matplotlib.rcParams['font.family'] = "Times New Roman"
-
+matplotlib.rcParams.update({'font.size': 14})
 input_samples = 9
 nonlinear_dynamic_step_size = 1e-2
 
@@ -141,7 +141,7 @@ def test_hopper_1d_planning():
         # print(explored_states)
         # print(len(explored_states))
         # print('number of nodes',rrt.node_tally)
-        print("Best distance %f" %best_distance)
+        # print("Best distance %f" %best_distance)
         fig = plt.figure()
         ax = fig.add_subplot(111)
         fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
@@ -153,10 +153,12 @@ def test_hopper_1d_planning():
         # ax.set_aspect('equal')
         plt.plot([l+p, l+p], [-7,7], 'm--', lw=1.5)
         plt.plot([l, l], [-7,7], 'b--', lw=1.5)
-        plt.xlim([0,4])
-        plt.ylim([-8,8])
         ax.grid(True, which='both')
         # ax.set_xlim(left=0)
+        plt.xlim([0.5,4.5])
+        plt.ylim([-8,8])
+        plt.tight_layout()
+        plt.gcf().subplots_adjust(left=0.13, bottom=0.12)
         plt.xlabel('$x(m)$')
         plt.ylabel('$\dot{x}(m/s)$')
         duration += (end_time-start_time)
@@ -166,26 +168,27 @@ def test_hopper_1d_planning():
         plt.clf()
         plt.close()
 
-        # # # # Plot explored reachable sets
-        # # # FIXME: Handle degenerated reachable set
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111)
-        # fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01)
-        #
-        # ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
-        # ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
-        # ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
-        #
-        # # ax.set_aspect('equal')
-        # plt.xlabel('$x$')
-        # plt.ylabel('$\dot{x}$')
-        # plt.xlim([0,4])
-        # plt.ylim([-8,8])
-        # plt.tight_layout()
-        # plt.title('Reachable Set after %.2fs (%d nodes)' %(duration, len(polytope_reachable_sets)))
-        # plt.savefig('R3T_Hopper_1d_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
-        # # plt.show()
-        # plt.clf()
+        # # # Plot explored reachable sets
+        # # FIXME: Handle degenerated reachable set
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01)
+
+        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
+        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
+        ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
+
+        # ax.set_aspect('equal')
+        plt.xlabel('$x$')
+        plt.ylabel('$\dot{x}$')
+        plt.xlim([0.5,4.5])
+        plt.ylim([-8,8])
+        plt.tight_layout()
+        plt.gcf().subplots_adjust(left=0.13, bottom=0.12)
+        plt.title('Reachable Set after %.2fs (%d nodes)' %(duration, len(polytope_reachable_sets)))
+        plt.savefig('R3T_Hopper_1d_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
+        # plt.show()
+        plt.clf()
 
 
         if found_goal:

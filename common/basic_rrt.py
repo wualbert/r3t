@@ -99,6 +99,7 @@ class StateTree:
         # print('nearest',self.state_id_to_state[state_id])
         return self.state_id_to_state[state_id]
 
+global dropped_states
 class BasicRRT:
     def __init__(self, root_state, sampler, reached_goal_function, plan_collision_free_path_towards, state_tree=StateTree(), rewire_radius = None):
         self.root_node = Node(root_state, cost_from_parent=0)
@@ -115,7 +116,8 @@ class BasicRRT:
         self.node_tally = 0
         self.rewire_radius=rewire_radius
         self.plan_collision_free_path_towards=plan_collision_free_path_towards
-
+        global dropped_states
+        dropped_states = 0
     def create_child_node(self, parent_node, child_state, cost_from_parent, path_from_parent, true_dynamics_path=None):
         '''
         Given a child state reachable from a parent node, create a node with that child state
@@ -144,6 +146,7 @@ class BasicRRT:
 
     def build_tree_to_goal_state(self, goal_state, allocated_time=20, stop_on_first_reach=False, rewire=False,
                                      explore_deterministic_next_state=True, max_nodes_to_add=int(1e9)):
+        global dropped_states
         start = default_timer()
         self.goal_state = goal_state
         # For cases where root node can lead directly to goal
@@ -160,6 +163,7 @@ class BasicRRT:
                     default_timer() - start, self.node_tally))
                     return self.goal_node
             if default_timer()-start>allocated_time:
+                print('Dropped %i states' %dropped_states)
                 if self.goal_node is None:
                     print('Unable to find path within %f seconds!' % (default_timer() - start))
                     return None
@@ -172,10 +176,15 @@ class BasicRRT:
             state_sample = self.sampler()
             # if not explore_deterministic_next_state:
             nearest_state = self.state_tree.find_nearest(state_sample)
-            nearest_node = self.state_to_node_map[hash(str(nearest_state))]
+            try:
+                nearest_node = self.state_to_node_map[hash(str(nearest_state))]
+            except:
+                print('node not found!')
+                continue
             is_extended, new_node = self.extend(state_sample, nearest_node)
             if not is_extended: #extension failed
                 print('Warning: extension failed')
+                dropped_states += 1
                 continue
             new_state_id = hash(str(new_node.state))
             if new_state_id in self.state_to_node_map:

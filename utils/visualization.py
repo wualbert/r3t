@@ -45,6 +45,9 @@ def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_
             for i in range(len(node.true_dynamics_path)-1):
                 goal_lines.append([np.ndarray.flatten(node.true_dynamics_path[i]), np.ndarray.flatten(node.true_dynamics_path[i+1])])
             assert(node in node.parent.children)
+            # hack for 1D hopper visualization
+            if node.parent==rrt.root_node:
+                goal_lines.append([np.ndarray.flatten(node.true_dynamics_path[-1]), np.ndarray.flatten(node.parent.state)])
             node = node.parent
         line_colors = np.full(len(lines), 'gray')
         line_widths = np.full(len(lines), linewidths)

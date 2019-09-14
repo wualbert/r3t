@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.hopper_1d import Hopper_1d
@@ -9,6 +10,8 @@ from rg_rrt_star.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
 import os
+matplotlib.rcParams['font.family'] = "Times New Roman"
+matplotlib.rcParams.update({'font.size': 14})
 
 global best_distance
 
@@ -34,10 +37,10 @@ def test_hopper_1d_planning():
 
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = rnd[0]*5-0.5
+        rnd[0] = rnd[0]*5+0.5
         rnd[1] = (rnd[1]-0.5)*2*10
         goal_bias = np.random.rand(1)
-        if goal_bias<0.25:
+        if goal_bias<0.1:
             return goal_state
         return rnd
 
@@ -104,23 +107,23 @@ def test_hopper_1d_planning():
             return True
         return False
 
-    rrt = SymbolicSystem_RGRRT(hopper_system, uniform_basic_sampler, step_size, reached_goal_function=reached_goal_function)
+    rrt = SymbolicSystem_RGRRT(hopper_system, gaussian_mixture_sampler, step_size, reached_goal_function=reached_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
     duration = 0
     os.makedirs('RG_RRT_Hopper_1d_'+experiment_name)
-    max_iterations = 100
+    max_iterations = 1
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 100, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
         print("Best distance %f" %best_distance)
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
+        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal,goal_override=goal_state)
         # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
         # for explored_state in explored_states:
         #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
@@ -129,15 +132,17 @@ def test_hopper_1d_planning():
         # ax.set_aspect('equal')
         plt.plot([l+p, l+p], [-7,7], 'm--', lw=1.5)
         plt.plot([l, l], [-7,7], 'b--', lw=1.5)
-        plt.xlim([0,4])
+        plt.xlim([0.5,4.5])
         plt.ylim([-8,8])
+        plt.tight_layout()
+        plt.gcf().subplots_adjust(left=0.13, bottom=0.12)
         # ax.set_xlim(left=0)
         ax.grid(True, which='both')
         # ax.set_xlim(left=0)
         plt.xlabel('$x(m)$')
         plt.ylabel('$\dot{x}(m/s)$')
         duration += (end_time-start_time)
-        plt.title('RRT after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.title('RG-RRT after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
         plt.savefig('RG_RRT_Hopper_1d_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
         # plt.show()
         plt.clf()
