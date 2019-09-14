@@ -2,7 +2,7 @@ from collections import deque
 import matplotlib.pyplot as plt
 from matplotlib import collections as mc
 import numpy as np
-from rg_rrt_star.symbolic_system.examples.hopper_2D_visualize import *
+from r3t.symbolic_system.examples.hopper_2D_visualize import *
 
 def visualize_node_tree_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_path_to_goal=False, goal_override=None, dims=None):
     if fig is None or ax is None:

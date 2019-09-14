@@ -1,5 +1,5 @@
 import pydrake
-from rg_rrt_star.common.r3t import *
+from r3t.common.r3t import *
 from polytope_symbolic_system.common.symbolic_system import *
 from pypolycontain.lib.operations import distance_point_polytope
 from collections import deque

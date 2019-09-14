@@ -1,4 +1,4 @@
-from rg_rrt_star.common.r3t import *
+from r3t.common.r3t import *
 from rtree import index
 import matplotlib.pyplot as plt
 from matplotlib import collections  as mc

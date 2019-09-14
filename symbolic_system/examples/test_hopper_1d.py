@@ -3,10 +3,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.hopper_1d import Hopper_1d
-from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_R3T
+from r3t.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_R3T
 from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope
 from pypolycontain.lib.operations import distance_point_polytope
-from rg_rrt_star.utils.visualization import visualize_node_tree_2D
+from r3t.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
 import os

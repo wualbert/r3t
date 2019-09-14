@@ -1,7 +1,7 @@
 import numpy as np
 # import cPickle as pickle
 # import dill
-from rg_rrt_star.common.r3t import *
+from r3t.common.r3t import *
 import os
 from collections import deque
 from utils.utils import *

@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer
-from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import *
-from rg_rrt_star.symbolic_system.examples.hopper_2D_visualize import hopper_plot
-from rg_rrt_star.utils.visualization import visualize_node_tree_hopper_2D, visualize_node_tree_2D
+from r3t.symbolic_system.symbolic_system_rg_rrt_star import *
+from r3t.symbolic_system.examples.hopper_2D_visualize import hopper_plot
+from r3t.utils.visualization import visualize_node_tree_hopper_2D, visualize_node_tree_2D
 from polytope_symbolic_system.examples.hopper_2d import Hopper_2d
 from pypolycontain.lib.polytope import polytope
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
