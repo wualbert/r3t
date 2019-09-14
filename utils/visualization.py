@@ -143,7 +143,23 @@ def visualize_node_tree_2D_old(rrt, fig=None, ax=None, s=1, linewidths = 0.25, s
     return fig, ax
 
 def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_path_to_goal=False, goal_override=None,\
-                                  dims=[0,1], show_body_attitude=True, scaling_factor=1, draw_goal =False, ground_height_function = None):
+                                  dims=[0,1], show_body_attitude='goal', scaling_factor=1, draw_goal =False, ground_height_function = None):
+    """
+
+    :param rrt:
+    :param fig:
+    :param ax:
+    :param s:
+    :param linewidths:
+    :param show_path_to_goal:
+    :param goal_override:
+    :param dims:
+    :param show_body_attitude: 'goal', 'all', or nothing
+    :param scaling_factor:
+    :param draw_goal:
+    :param ground_height_function:
+    :return:
+    """
     if fig is None or ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -243,7 +259,12 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
     else:
         lc = mc.LineCollection(lines, linewidths=linewidths, colors='gray')
         ax.add_collection(lc)
-    if show_body_attitude:
+    if show_body_attitude =='goal':
+        node = rrt.goal_node
+        while node is not None:
+            fig, ax = hopper_plot(node.state, fig, ax, alpha=0.85, scaling_factor=scaling_factor)
+            node = node.parent
+    elif show_body_attitude=='all':
         for i, n in enumerate(nodes_to_visualize):
             # fig, ax = hopper_plot(n.state, fig, ax, alpha=0.5/len(nodes_to_visualize)*i+0.1)
             fig, ax = hopper_plot(n.state, fig, ax, alpha=0.15, scaling_factor=scaling_factor)
