@@ -259,9 +259,9 @@ class R3T:
         # check for obstacles
         if explore_deterministic_next_state:
             cost_to_go, path, deterministic_next_state = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state,
-                                                                                          return_deterministic_next_state=True)
+                                                                                          return_deterministic_next_state=explore_deterministic_next_state)
         else:
-            cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state)
+            cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state, return_deterministic_next_state=explore_deterministic_next_state)
         #FIXME: Support for partial extensions
         if path is None:
             if explore_deterministic_next_state:

@@ -14,15 +14,14 @@ from datetime import datetime
 import os
 
 class Hopper2D_ReachableSet(PolytopeReachableSet):
-    def __init__(self, parent_state, polytope_list, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, ground_height_function = lambda x:0):
-        PolytopeReachableSet.__init__(self, parent_state, polytope_list, epsilon, contains_goal_function, deterministic_next_state)
+    def __init__(self, parent_state, polytope_list, sys, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, ground_height_function = lambda x:0):
+        PolytopeReachableSet.__init__(self, parent_state, polytope_list, sys=sys, epsilon=epsilon, contains_goal_function=contains_goal_function, deterministic_next_state=deterministic_next_state)
         self.ground_height_function = ground_height_function
         self.body_attitude_limit = np.pi/2-1e-2
         self.leg_attitude_limit = np.pi/3
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
         #fixme: support collision checking
         #check for impossible configurations
-
         # tipped over
         if goal_state[2]+goal_state[7]*2e-2>self.leg_attitude_limit or goal_state[2]+goal_state[7]*2e-2<-self.leg_attitude_limit:
             # print('leg tipped over')
@@ -115,9 +114,10 @@ class Hopper2D_RGRRTStar(SymbolicSystem_R3T):
             #     print("H", reachable_set_polytope[0].P.H)
             #     print("h", reachable_set_polytope[0].P.h)
             #TODO: collision check here
+
             if np.all(abs(self.sys.get_linearization(state=state).B)<= 1e-5):
-                deterministic_next_state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)
-            return Hopper2D_ReachableSet(state,reachable_set_polytope, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
+                deterministic_next_state = [self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)]
+            return Hopper2D_ReachableSet(state,reachable_set_polytope, sys=self.sys, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
         SymbolicSystem_R3T.__init__(self, sys, sampler, step_size, contains_goal_function, compute_reachable_set)
 
 def test_hopper_2d_planning():
@@ -233,8 +233,8 @@ def test_hopper_2d_planning():
                 distance = d
         # print((projection-goal_state))
         if np.all(abs(projection-goal_state)<goal_tolerance):
-            return True
-        return False
+            return True, [reachable_set.deterministic_next_state]
+        return False, None
 
     rrt = Hopper2D_RGRRTStar(hopper_system, hybrid_sampler, step_size, contains_goal_function=contains_goal_function)
     found_goal = False

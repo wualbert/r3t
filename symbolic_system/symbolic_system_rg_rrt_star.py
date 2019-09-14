@@ -66,7 +66,7 @@ class PolytopeReachableSet(ReachableSet):
 
     def contains_goal(self, goal_state):
         # check if goal is epsilon away from the reachable sets
-        if self.contains_goal_function:
+        if self.contains_goal_function is not None:
             return self.contains_goal_function(self, goal_state)
         raise NotImplementedError
 
