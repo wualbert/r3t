@@ -15,7 +15,8 @@ import os
 
 class Hopper2D_ReachableSet(PolytopeReachableSet):
     def __init__(self, parent_state, polytope_list, sys, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, ground_height_function = lambda x:0):
-        PolytopeReachableSet.__init__(self, parent_state, polytope_list, sys=sys, epsilon=epsilon, contains_goal_function=contains_goal_function, deterministic_next_state=deterministic_next_state)
+        PolytopeReachableSet.__init__(self, parent_state, polytope_list, sys=sys, epsilon=epsilon, contains_goal_function=contains_goal_function, \
+                                      use_true_reachable_set=True, reachable_set_step_size=1e-1, nonlinear_dynamic_step_size=1e-3, deterministic_next_state=deterministic_next_state)
         self.ground_height_function = ground_height_function
         self.body_attitude_limit = np.pi/2-1e-2
         self.leg_attitude_limit = np.pi/3
@@ -106,7 +107,7 @@ class Hopper2D_RGRRTStar(SymbolicSystem_R3T):
             :return:a
             '''
             deterministic_next_state = None
-            reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size)
+            reachable_set_polytope = self.sys.get_reachable_polytopes(state)
             # if state[1] <= 0:
             #     print('state', state)
             #     print("T", reachable_set_polytope[0].T)
@@ -245,7 +246,7 @@ def test_hopper_2d_planning():
     max_iterations = 10000
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True,save_true_dynamics_path = True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes

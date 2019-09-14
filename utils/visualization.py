@@ -149,6 +149,15 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
             state = np.ndarray.flatten(node.state)[dims]
         else:
             state = np.ndarray.flatten(node.state)
+        for i in range(len(node.true_dynamics_path) - 1):
+            # handle indexing
+            if dims:
+                lines.append([np.ndarray.flatten(node.true_dynamics_path[i])[dims],
+                              np.ndarray.flatten(node.true_dynamics_path[i + 1])[dims]])
+            else:
+                lines.append([np.ndarray.flatten(node.true_dynamics_path[i]),
+                              np.ndarray.flatten(node.true_dynamics_path[i + 1])])
+
         if node.children is not None:
             # print(len(node.children))
             node_queue.extend(list(node.children))
@@ -158,11 +167,11 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
                     child_state = np.ndarray.flatten(child.state)[dims]
                 else:
                     child_state = np.ndarray.flatten(child.state)
-                # don't plot the goal if goal override is on
-                if goal_override is not None and child==rrt.goal_node:
-                    lines.append([state, goal_override])
-                else:
-                    lines.append([state, child_state])
+                # # don't plot the goal if goal override is on
+                # if goal_override is not None and child==rrt.goal_node:
+                #     lines.append([state, goal_override])
+                # else:
+                #     lines.append([state, child_state])
         ax.scatter(*state, c='gray', s=s)
     if show_path_to_goal:
         goal_lines = []
