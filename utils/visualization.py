@@ -134,7 +134,7 @@ def visualize_node_tree_2D_old(rrt, fig=None, ax=None, s=1, linewidths = 0.25, s
         ax.add_collection(lc)
     return fig, ax
 
-def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_path_to_goal=False, goal_override=None, dims=None, show_body_attitude=True):
+def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_path_to_goal=False, goal_override=None, dims=None, show_body_attitude=True, scaling_factor=1):
     if fig is None or ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -234,5 +234,5 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
         ax.plot([-10,10],[0,0],'-',linewidth=3,markersize=10, color='yellow', alpha=0.3)
         for i, n in enumerate(nodes_to_visualize):
             # fig, ax = hopper_plot(n.state, fig, ax, alpha=0.5/len(nodes_to_visualize)*i+0.1)
-            fig, ax = hopper_plot(n.state, fig, ax, alpha=0.15)
+            fig, ax = hopper_plot(n.state, fig, ax, alpha=0.15, scaling_factor=scaling_factor)
     return fig, ax
