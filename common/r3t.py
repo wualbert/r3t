@@ -331,7 +331,7 @@ class R3T:
                 new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
                 new_state_id = hash(str(new_state))
                 # add the new node to the set tree if the new node is not already in the tree
-                if new_state_id in self.state_to_node_map:
+                if new_state_id in self.state_to_node_map or discard:
                     # FIXME: how to prevent repeated state exploration?
                     # print('Warning: state already explored')
                     continue  # #sanity check to prevent numerical errors

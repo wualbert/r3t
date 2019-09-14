@@ -143,7 +143,7 @@ def visualize_node_tree_2D_old(rrt, fig=None, ax=None, s=1, linewidths = 0.25, s
     return fig, ax
 
 def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_path_to_goal=False, goal_override=None,\
-                                  dims=[0,1], show_body_attitude='goal', scaling_factor=1, draw_goal =False, ground_height_function = None):
+                                  dims=[0,1], show_body_attitude='goal', scaling_factor=1, draw_goal =False, ground_height_function = None, displacement=1.2):
     """
 
     :param rrt:
@@ -168,7 +168,6 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
     i = 0
     nodes_to_visualize = [rrt.root_node]
 
-
     while node_queue:
         i+=1
         node = node_queue.popleft()
@@ -180,7 +179,7 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
         #handle goal
         if goal_override is not None and node==rrt.goal_node:
             lines.append([state, goal_override])
-        elif node == rrt.root_node or node==rrt.goal_node:
+        elif node==rrt.goal_node:
             pass
         else:
             for i in range(len(node.true_dynamics_path)-1):
@@ -191,7 +190,9 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
                 else:
                     lines.append([np.ndarray.flatten(node.true_dynamics_path[i]),
                                   np.ndarray.flatten(node.true_dynamics_path[i + 1])])
-
+        if node.parent == rrt.root_node:
+            lines.append([np.ndarray.flatten(node.parent.state)[dims],
+                          np.ndarray.flatten(node.true_dynamics_path[0])[dims]])
         if node.children is not None:
             # print(len(node.children))
             nodes_to_visualize.extend(list(node.children))
@@ -261,9 +262,22 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
         ax.add_collection(lc)
     if show_body_attitude =='goal':
         node = rrt.goal_node
-        while node is not None:
-            fig, ax = hopper_plot(node.state, fig, ax, alpha=0.85, scaling_factor=scaling_factor)
+        if not draw_goal and node is not None:
             node = node.parent
+        while node is not None:
+            if node.parent is None:
+                #reached root
+                #plot root
+                fig, ax = hopper_plot(node.state, fig, ax, alpha=0.2, scaling_factor=scaling_factor)
+                node = node.parent
+                break
+            elif np.linalg.norm(node.state-node.parent.state)<displacement:
+                #skipping
+                node = node.parent
+            else:
+                #plot
+                fig, ax = hopper_plot(node.state, fig, ax, alpha=0.85, scaling_factor=scaling_factor)
+                node = node.parent
     elif show_body_attitude=='all':
         for i, n in enumerate(nodes_to_visualize):
             # fig, ax = hopper_plot(n.state, fig, ax, alpha=0.5/len(nodes_to_visualize)*i+0.1)
