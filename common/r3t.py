@@ -240,7 +240,6 @@ class R3T:
         # if cost_from_parent is None or path_from_parent is None:
         # assert (parent_node.reachable_set.contains(child_state))
         cost_from_parent, path_from_parent = parent_node.reachable_set.plan_collision_free_path_in_set(child_state)
-
         # construct a new node
         new_node = Node(child_state, self.compute_reachable_set(child_state), true_dynamics_path,
                         parent=parent_node, path_from_parent=path_from_parent, cost_from_parent=cost_from_parent)
