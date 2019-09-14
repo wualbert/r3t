@@ -14,9 +14,9 @@ from datetime import datetime
 import os
 
 class Hopper2D_ReachableSet(PolytopeReachableSet):
-    def __init__(self, parent_state, polytope_list, sys, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, ground_height_function = lambda x:0):
+    def __init__(self, parent_state, polytope_list, sys, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, ground_height_function = lambda x:0, reachable_set_step_size=1e-1, nonlinear_dynamic_step_size=1e-3):
         PolytopeReachableSet.__init__(self, parent_state, polytope_list, sys=sys, epsilon=epsilon, contains_goal_function=contains_goal_function, \
-                                      use_true_reachable_set=True, reachable_set_step_size=1e-1, nonlinear_dynamic_step_size=1e-3, deterministic_next_state=deterministic_next_state)
+                                      use_true_reachable_set=True, reachable_set_step_size=reachable_set_step_size, nonlinear_dynamic_step_size=nonlinear_dynamic_step_size, deterministic_next_state=deterministic_next_state)
         self.ground_height_function = ground_height_function
         self.body_attitude_limit = np.pi/2-1e-2
         self.leg_attitude_limit = np.pi/3
@@ -96,9 +96,10 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
     #     return closest_point, np.linalg.norm(closest_point-self.parent_state)<self.epsilon
 
 class Hopper2D_RGRRTStar(SymbolicSystem_R3T):
-    def __init__(self, sys, sampler, step_size, contains_goal_function = None):
+    def __init__(self, sys, sampler, step_size, nonlinear_dynamic_step_size, contains_goal_function = None):
         self.sys = sys
         self.step_size = step_size
+        self.nonlinear_dynamic_step_size = nonlinear_dynamic_step_size
         self.contains_goal_function = contains_goal_function
         def compute_reachable_set(state):
             '''
@@ -115,10 +116,14 @@ class Hopper2D_RGRRTStar(SymbolicSystem_R3T):
             #     print("H", reachable_set_polytope[0].P.H)
             #     print("h", reachable_set_polytope[0].P.h)
             #TODO: collision check here
-
-            if np.all(abs(self.sys.get_linearization(state=state).B)<= 1e-5):
-                deterministic_next_state = [self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)]
-            return Hopper2D_ReachableSet(state,reachable_set_polytope, sys=self.sys, contains_goal_function=self.contains_goal_function, deterministic_next_state=deterministic_next_state)
+            if np.all(self.sys.get_linearization(state=state).B == 0):
+                deterministic_next_state = [state]
+                for step in range(int(self.step_size / self.nonlinear_dynamic_step_size)):
+                    state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False,
+                                                  step_size=nonlinear_dynamic_step_size)
+                    deterministic_next_state.append(state)
+            return Hopper2D_ReachableSet(state,reachable_set_polytope, sys=self.sys, contains_goal_function=self.contains_goal_function,\
+                                         deterministic_next_state=deterministic_next_state, reachable_set_step_size=self.step_size, nonlinear_dynamic_step_size=self.nonlinear_dynamic_step_size)
         SymbolicSystem_R3T.__init__(self, sys, sampler, step_size, contains_goal_function, compute_reachable_set)
 
 def test_hopper_2d_planning():
@@ -237,7 +242,7 @@ def test_hopper_2d_planning():
             return True, [reachable_set.deterministic_next_state]
         return False, None
 
-    rrt = Hopper2D_RGRRTStar(hopper_system, hybrid_sampler, step_size, contains_goal_function=contains_goal_function)
+    rrt = Hopper2D_RGRRTStar(hopper_system, hip_coordinates_sampler, step_size, nonlinear_dynamic_step_size=1e-3, contains_goal_function=contains_goal_function)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
