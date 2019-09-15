@@ -143,7 +143,7 @@ def visualize_node_tree_2D_old(rrt, fig=None, ax=None, s=1, linewidths = 0.25, s
     return fig, ax
 
 def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25, show_path_to_goal=False, goal_override=None,\
-                                  dims=[0,1], show_body_attitude='goal', scaling_factor=1, draw_goal =False, ground_height_function = None, displacement=1.2):
+                                  dims=[0,1], show_body_attitude='goal', scaling_factor=1, draw_goal =False, ground_height_function = None, downsample=3):
     """
 
     :param rrt:
@@ -262,6 +262,7 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
         ax.add_collection(lc)
     if show_body_attitude =='goal':
         node = rrt.goal_node
+        skip = downsample
         if not draw_goal and node is not None:
             node = node.parent
         while node is not None:
@@ -271,13 +272,14 @@ def visualize_node_tree_hopper_2D(rrt, fig=None, ax=None, s=1, linewidths = 0.25
                 fig, ax = hopper_plot(node.state, fig, ax, alpha=0.2, scaling_factor=scaling_factor)
                 node = node.parent
                 break
-            elif np.linalg.norm(node.state-node.parent.state)<displacement:
+            if skip<downsample:
                 #skipping
                 node = node.parent
+                skip+=1
             else:
                 #plot
-                fig, ax = hopper_plot(node.state, fig, ax, alpha=0.85, scaling_factor=scaling_factor)
-                node = node.parent
+                fig, ax = hopper_plot(node.state, fig, ax, alpha=0.25, scaling_factor=scaling_factor)
+                skip = 0
     elif show_body_attitude=='all':
         for i, n in enumerate(nodes_to_visualize):
             # fig, ax = hopper_plot(n.state, fig, ax, alpha=0.5/len(nodes_to_visualize)*i+0.1)

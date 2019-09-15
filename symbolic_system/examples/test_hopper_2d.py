@@ -136,7 +136,7 @@ class Hopper2D_RGRRTStar(SymbolicSystem_R3T):
 
         SymbolicSystem_R3T.__init__(self, sys, sampler, step_size, contains_goal_function, compute_reachable_set)
 
-def test_hopper_2d_planning(initial_state = np.asarray([0., 1., -0.1, 0, 1.5, 0., 0., 0., 0., 0.]), goal_state = np.asarray([1,1.,0.,0.,1.5,0.,0.,0.,0.,0.]),\
+def test_hopper_2d_planning(initial_state = np.asarray([0., 1., 0, 0, 1.5, 0., 0., 0., 0., 0.]), goal_state = np.asarray([10.,1.,0.,0.,1.5,0.,0.,0.,0.,0.]),\
                             ground_height_function = lambda x:0, save_animation=False):
     hopper_system = Hopper_2d(initial_state=initial_state,ground_height_function=ground_height_function)
     # [theta1, theta2, x0, y0, w]
@@ -264,7 +264,7 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., -0.1, 0, 1.5, 0.
     max_iterations = 10000
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True,save_true_dynamics_path = True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 30, rewire=True, explore_deterministic_next_state=True,save_true_dynamics_path = True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -285,7 +285,7 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., -0.1, 0, 1.5, 0.
         # plt.plot([l+p, l+p], [-2.5, 2.5], 'm--', lw=1.5)
         #plot goal
         current_ylim = ax.get_ylim()
-        plt.plot([goal_state[0],goal_state[0]], [current_ylim[0]-1, 6], 'g--', lw=1.5, alpha=0.5)
+        plt.plot([goal_state[0],goal_state[0]], [current_ylim[0]-1, 6], 'g--', lw=3, alpha=0.8)
         # plot ground
         current_xlim = ax.get_xlim()
         x_samples = np.linspace(ax.get_xlim()[0]-1, ax.get_xlim()[1]+1)
@@ -297,7 +297,8 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., -0.1, 0, 1.5, 0.
         plt.xlabel('$x$(m)')
         plt.ylabel('$y$(m)')
         duration += (end_time-start_time)
-        plt.title('R3T after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.title('R3T after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally),pad=15)
+        plt.tight_layout()
         plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
 
         # plt.show()
@@ -314,7 +315,8 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., -0.1, 0, 1.5, 0.
         # ax.set_xlim(left=0)
         plt.xlabel('$y_0$')
         plt.ylabel('$r$')
-        plt.title('R3T after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.title('R3T after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally),pad=15)
+        plt.tight_layout()
         plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds_2.png' % duration, dpi=500)
 
         # plt.show()
@@ -331,7 +333,8 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., -0.1, 0, 1.5, 0.
         # ax.set_xlim(left=0)
         plt.xlabel('$x_0$')
         plt.ylabel('$r$')
-        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.title('R3T after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally), pad=15)
+        plt.tight_layout()
         plt.savefig('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds_3.png' % duration, dpi=500)
         plt.clf()
         plt.close()
@@ -355,6 +358,7 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., -0.1, 0, 1.5, 0.
                 fig = plt.figure()
                 ax = fig.add_subplot(111)
                 hopper_plot(s, fig, ax, scaling_factor=1)
+                plt.tight_layout()
                 plt.savefig('RRT_Hopper_2d_' + experiment_name + '/animation_%.2f_seconds/%i' % (duration, index), dpi=500)
                 plt.clf()
                 plt.close()
@@ -364,20 +368,20 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., -0.1, 0, 1.5, 0.
             os.makedirs('RRT_Hopper_2d_' + experiment_name + '/goal_animation_%.2f_seconds' % duration)
             # find state closest to goal
             node = rrt.goal_node.parent
-            states_to_plot = [node.parent]
+            states_to_plot = [node.parent.state]
             while node.parent is not None:
                 states_to_plot.extend(reversed(node.true_dynamics_path))
                 node = node.parent
             states_to_plot.reverse()
             #downsample
-            # states_to_plot = states_to_plot[0::2]
+            states_to_plot = states_to_plot[0::2]
             states_to_plot.append(rrt.goal_node.parent.state)
             for index, s in enumerate(states_to_plot):
                 fig = plt.figure()
                 ax = fig.add_subplot(111)
-                hopper_plot(s, fig, ax, scaling_factor=1, xlim=current_xlim, ylim=current_ylim)
+                hopper_plot(s, fig, ax, scaling_factor=1, xlim=current_xlim, ylim=current_ylim, alpha=1)
                 # plot goal
-                plt.plot([goal_state[0], goal_state[0]], [current_ylim[0] - 1, 6], 'g--', lw=1.5, alpha=0.5)
+                plt.plot([goal_state[0], goal_state[0]], [current_ylim[0] - 1, 6], 'g--', lw=3, alpha=0.8)
                 # plot ground
                 x_samples = np.linspace(current_xlim[0] - 1, current_xlim[1] + 1)
                 vec_ground = np.vectorize(ground_height_function)
@@ -395,6 +399,9 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., -0.1, 0, 1.5, 0.
         if found_goal:
             break
 
-
+def staircase_ground(x):
+    pass
 if __name__=='__main__':
-    test_hopper_2d_planning()
+    test_hopper_2d_planning(initial_state=np.asarray([0., 1., 0, 0, 1.5, 0., 0., 0., 0., 0.]),
+                                goal_state=np.asarray([10., 1., 0., 0., 1.5, 0., 0., 0., 0., 0.]), \
+                                ground_height_function=lambda x: 0, save_animation=False)
