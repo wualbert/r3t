@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import pydrake.symbolic as sym
 from timeit import default_timer
 from r3t.symbolic_system.symbolic_system_rg_rrt_star import *
 from r3t.symbolic_system.examples.hopper_2D_visualize import hopper_plot
@@ -29,7 +30,7 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
         #check for impossible configurations
         # tipped over
         if goal_state[2]+goal_state[7]*2e-2>self.leg_attitude_limit or goal_state[2]+goal_state[7]*2e-2<-self.leg_attitude_limit:
-            print('leg tipped over')
+            # print('leg tipped over')
             if return_deterministic_next_state:
                 return np.inf, None, None
             else:
@@ -179,12 +180,12 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., 0, 0, 1.5, 0., 0
         #     return uniform_sampler()
         rnd = np.random.rand(10)
         rnd[0] = rnd[0] * 100 - 3
-        rnd[1] = (rnd[1] - 0.5) * 2 * 2 + 4
+        rnd[1] = (rnd[1] - 0.5) * 2 * 0.75 + 1.5 + ground_height_function(rnd[0])
         rnd[2] = np.random.normal(0, np.pi / 4) # (np.random.rand(1)-0.5)*2*np.pi/12
         rnd[3] = np.random.normal(0, np.pi / 8)#np.random.normal(0, np.pi / 16)
         rnd[4] = (rnd[4] - 0.5) * 2 * 0.5 + 4
         rnd[5] = np.random.normal(1.5, 3) #(rnd[5] - 0.5) * 2 * 6
-        rnd[6] = (rnd[6] - 0.5) * 2 * 12 # np.random.normal(0, 6)
+        rnd[6] = (rnd[6] - 0.5) * 2 * 16 # np.random.normal(0, 6)
         rnd[7] = np.random.normal(0, 20) # (np.random.rand(1)-0.5)*2*20
         rnd[8] = np.random.normal(0, 3) # (np.random.rand(1)-0.5)*2*5
         rnd[9] = (rnd[9] - 0.5) * 2 * 10 + 3 #np.random.normal(2, 12)
@@ -264,7 +265,7 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., 0, 0, 1.5, 0., 0
     max_iterations = 10000
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 30, rewire=True, explore_deterministic_next_state=True,save_true_dynamics_path = True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 60, rewire=True, explore_deterministic_next_state=True,save_true_dynamics_path = True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -288,7 +289,7 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., 0, 0, 1.5, 0., 0
         plt.plot([goal_state[0],goal_state[0]], [current_ylim[0]-1, 6], 'g--', lw=3, alpha=0.8)
         # plot ground
         current_xlim = ax.get_xlim()
-        x_samples = np.linspace(ax.get_xlim()[0]-1, ax.get_xlim()[1]+1)
+        x_samples = np.linspace(ax.get_xlim()[0]-1, ax.get_xlim()[1]+1, num=100)
         vec_ground = np.vectorize(ground_height_function)
         ax.plot(x_samples, vec_ground(x_samples),'-',linewidth=3,markersize=10, color='saddlebrown', alpha=0.5)
 
@@ -383,7 +384,7 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., 0, 0, 1.5, 0., 0
                 # plot goal
                 plt.plot([goal_state[0], goal_state[0]], [current_ylim[0] - 1, 6], 'g--', lw=3, alpha=0.8)
                 # plot ground
-                x_samples = np.linspace(current_xlim[0] - 1, current_xlim[1] + 1)
+                x_samples = np.linspace(current_xlim[0] - 1, current_xlim[1] + 1, num=100)
                 vec_ground = np.vectorize(ground_height_function)
                 ax.plot(x_samples, vec_ground(x_samples), '-', linewidth=3, markersize=10, color='saddlebrown',
                         alpha=0.5)
@@ -399,9 +400,21 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., 0, 0, 1.5, 0., 0
         if found_goal:
             break
 
-def staircase_ground(x):
-    pass
+def staircase_ground_height_function(x):
+    if isinstance(x, sym.Variable):
+        e3 = -sym.exp(10 * (x - 3))
+        e7 = -sym.exp(10 * (x - 7))
+        return 0.5 / (1 + e3) - 0.5 / (1 + e7)
+    if 3<x<7:
+        return 0.5
+    else:
+        return 0
+
+
+def ramp_ground_height_function(x):
+    return 0.05*x
+
 if __name__=='__main__':
     test_hopper_2d_planning(initial_state=np.asarray([0., 1., 0, 0, 1.5, 0., 0., 0., 0., 0.]),
                                 goal_state=np.asarray([10., 1., 0., 0., 1.5, 0., 0., 0., 0., 0.]), \
-                                ground_height_function=lambda x: 0, save_animation=False)
+                                save_animation=False)
