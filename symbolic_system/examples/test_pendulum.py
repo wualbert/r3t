@@ -3,10 +3,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.pendulum import Pendulum
-from rg_rrt_star.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_RGRRTStar
+from r3t.symbolic_system.symbolic_system_rg_rrt_star import SymbolicSystem_R3T
 from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope
 from pypolycontain.lib.operations import distance_point_polytope
-from rg_rrt_star.utils.visualization import visualize_node_tree_2D
+from r3t.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
 import os
@@ -79,8 +79,8 @@ def test_pendulum_planning():
                     return True, np.asarray(state_list)
         return False, None
 
-    rrt = SymbolicSystem_RGRRTStar(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function,\
-                                   use_true_reachable_set=True, use_convex_hull=True)
+    rrt = SymbolicSystem_R3T(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function, \
+                             use_true_reachable_set=True, use_convex_hull=True)
     found_goal = False
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 

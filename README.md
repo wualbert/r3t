@@ -1,10 +1,13 @@
-# Reachability-Guided RRT*
-Warning: support for `box_world` has been temporarily dropped and it will NOT run out of the box!
+# R3T
+Warning: support for `box_world` and `dubins_car` has been temporarily dropped and it will NOT run out of the box!
 
 ## Usage
 
+#### Dependencies
+The repository requires [`PyDrake with Gurobi`](https://drake.mit.edu/python_bindings.html), [`closest_polytope_algorithms`](https://github.com/wualbert/closest_polytope_algorithms.git), and [`polytope_symbolic_system`](https://github.com/wualbert/closest_polytope_algorithms.git) to run.
+
 #### Installation
-Clone this repository with `git clone --recursive` if you want to run `box_world` or `dubin_car` problems. The code depends on the repository [`bounding_box_closest_polytopes`](https://github.com/wualbert/bounding_box_closest_polytope.git "wualbert/bounding_box_closest_polytope") for axis-aligned bounding box representations.
+After installing [`PyDrake with Gurobi`](https://drake.mit.edu/python_bindings.html), clone [`closest_polytope_algorithms`](https://github.com/wualbert/closest_polytope_algorithms.git) and [`polytope_symbolic_system`](https://github.com/wualbert/closest_polytope_algorithms.git) to the same directory level as `r3t`.
 
 #### Running an example
 All examples are located in the respective `/test` folders of each problem setup.
@@ -14,6 +17,3 @@ Please refer to the `DC_RGRRTStar.__init__` for what information is required to 
 
 #### Solving for the path to a goal
 Please refer to the function `build_tree_to_goal_state` and examples in `/test` folders for how to solve for the path after setting up the problem.
-
-## Troubleshooting
-If git submodules isn't working, `bounding_box_closest_polytopes` can be found [here](https://github.com/wualbert/bounding_box_closest_polytope.git "wualbert/bounding_box_closest_polytope")

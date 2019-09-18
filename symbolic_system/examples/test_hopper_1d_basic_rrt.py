@@ -1,14 +1,17 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.hopper_1d import Hopper_1d
-from rg_rrt_star.symbolic_system.symbolic_system_basic_rrt import SymbolicSystem_Basic_RRT
+from r3t.symbolic_system.symbolic_system_basic_rrt import SymbolicSystem_Basic_RRT
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from pypolycontain.lib.operations import distance_point_polytope
-from rg_rrt_star.utils.visualization import visualize_node_tree_2D_old
+from r3t.utils.visualization import visualize_node_tree_2D_old
 import time
 from datetime import datetime
 import os
+matplotlib.rcParams['font.family'] = "Times New Roman"
+matplotlib.rcParams.update({'font.size': 14})
 
 global best_distance
 
@@ -34,10 +37,10 @@ def test_hopper_1d_planning():
 
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = rnd[0]*5-0.5
+        rnd[0] = rnd[0]*5+0.5
         rnd[1] = (rnd[1]-0.5)*2*10
         goal_bias = np.random.rand(1)
-        if goal_bias<0.25:
+        if goal_bias<0.1:
             return goal_state
         return rnd
 
@@ -49,7 +52,6 @@ def test_hopper_1d_planning():
         if np.random.rand(1) > gaussian_ratio:
             return uniform_sampler()
         return rnd
-
 
     def action_space_mixture_sampler():
         action_space_ratio = 0.08
@@ -113,10 +115,10 @@ def test_hopper_1d_planning():
 
     duration = 0
     os.makedirs('Basic_RRT_Hopper_1d_'+experiment_name)
-    max_iterations = 100
+    max_iterations = 1
     for itr in range(max_iterations):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 15, rewire=True, explore_deterministic_next_state=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, stop_on_first_reach=True, allocated_time= 100, rewire=True, explore_deterministic_next_state=True) is not None:
             found_goal = True
         end_time = time.time()
         print("Best distance %f" %best_distance)
@@ -132,15 +134,17 @@ def test_hopper_1d_planning():
         # ax.set_aspect('equal')
         plt.plot([l+p, l+p], [-7,7], 'm--', lw=1.5)
         plt.plot([l, l], [-7,7], 'b--', lw=1.5)
-        plt.xlim([0,4])
+        plt.xlim([0.5,4.5])
         plt.ylim([-8,8])
+        plt.tight_layout()
+        plt.gcf().subplots_adjust(left=0.13, bottom=0.12)
         # ax.set_xlim(left=0)
         ax.grid(True, which='both')
         # ax.set_xlim(left=0)
         plt.xlabel('$x(m)$')
         plt.ylabel('$\dot{x}(m/s)$')
         duration += (end_time-start_time)
-        plt.title('Basic RRT after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        plt.title('RRT after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
         plt.savefig('Basic_RRT_Hopper_1d_'+experiment_name+'/%.2f_seconds.png' % duration, dpi=500)
         # plt.show()
         plt.clf()
@@ -150,5 +154,5 @@ def test_hopper_1d_planning():
 
 
 if __name__=='__main__':
-    for i in range(10):
+    for i in range(1):
         test_hopper_1d_planning()

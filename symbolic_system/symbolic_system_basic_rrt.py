@@ -1,5 +1,5 @@
 import pydrake
-from rg_rrt_star.common.basic_rrt import *
+from r3t.common.basic_rrt import *
 class SymbolicSystem_Basic_RRT(BasicRRT):
     def __init__(self, sys, sampler, step_size, reached_goal_function):
         self.sys = sys

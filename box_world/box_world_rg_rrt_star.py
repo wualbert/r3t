@@ -1,4 +1,4 @@
-from common.rg_rrt_star import *
+from common.r3t import *
 from bounding_box_closest_polytope.lib.box import AABB, point_in_box
 from bounding_box_closest_polytope.visualization.visualize import visualize_boxes
 from rtree import index
@@ -118,7 +118,7 @@ class BW_StateTree(ReachableSetTree):
         return self.tree.intersection([query_state[0]-d/2,query_state[1]-d/2,query_state[0]+d/2,query_state[1]+d/2], objects=False)
 
 
-class BW_RGRRTStar(RGRRTStar):
+class BW_R3T(R3T):
     def __init__(self, root_state, world_map,rewire_radius):
         '''
         Base RG-RRT*
@@ -129,8 +129,8 @@ class BW_RGRRTStar(RGRRTStar):
         '''
         state_tree = BW_StateTree()
         self.world_map = world_map
-        RGRRTStar.__init__(self, root_state, self.world_map.compute_reachable_set,
-                           self.world_map.random_sampler, state_tree, BW_Path,rewire_radius)
+        R3T.__init__(self, root_state, self.world_map.compute_reachable_set,
+                     self.world_map.random_sampler, state_tree, BW_Path, rewire_radius)
 
     def visualize(self, visualize_nodes=True, visualize_edges=True, visualize_answer=True,visualize_obstacles=True,ax = None, fig=None):
         if ax is None or fig is None:

@@ -1,5 +1,5 @@
 import pydrake
-from rg_rrt_star.common.rg_rrt_star import *
+from r3t.common.r3t import *
 from polytope_symbolic_system.common.symbolic_system import *
 from pypolycontain.lib.operations import distance_point_polytope
 from collections import deque
@@ -67,7 +67,7 @@ class PolytopeReachableSet(ReachableSet):
 
     def contains_goal(self, goal_state):
         # check if goal is epsilon away from the reachable sets
-        if self.contains_goal_function:
+        if self.contains_goal_function is not None:
             return self.contains_goal_function(self, goal_state)
         raise NotImplementedError
 
@@ -117,10 +117,13 @@ class PolytopeReachableSet(ReachableSet):
             state = self.parent_state
             state_list = [self.parent_state]
             for step in range(int(self.reachable_set_step_size/self.nonlinear_dynamic_step_size)):
-                state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
-                     starting_state= state)
-                state_list.append(state)
-
+                try:
+                    state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
+                         starting_state= state)
+                    state_list.append(state)
+                except Exception as e:
+                    # print('Caught %s' %e)
+                    return np.ndarray.flatten(closest_point), True, np.asarray([])
                 # print step,state
             # print(state, closest_point)
             if save_true_dynamics_path:
@@ -249,7 +252,7 @@ class SymbolicSystem_StateTree(StateTree):
             lu = AH_polytope_to_box(query_reachable_set.polytope_list)
             return list(self.state_idx.intersection(lu))
 
-class SymbolicSystem_RGRRTStar(RGRRTStar):
+class SymbolicSystem_R3T(R3T):
     def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False, \
                  nonlinear_dynamic_step_size=1e-2, use_convex_hull=True, goal_tolerance = 1e-2):
         self.sys = sys
@@ -276,12 +279,4 @@ class SymbolicSystem_RGRRTStar(RGRRTStar):
                 return PolytopeReachableSet(state,reachable_set_polytope, sys=self.sys, contains_goal_function=self.contains_goal_function, \
                                             deterministic_next_state=deterministic_next_state, reachable_set_step_size=self.step_size, use_true_reachable_set=use_true_reachable_set,\
                                             nonlinear_dynamic_step_size=nonlinear_dynamic_step_size)
-        RGRRTStar.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)
-        
-class Oracle_RGRRTStar(RGRRTStar):
-    def __init__(self, start_state, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False, \
-                 nonlinear_dynamic_step_size=1e-2, use_convex_hull=True, goal_tolerance = 1e-2):
-        self.step_size = step_size
-        self.contains_goal_function = contains_goal_function
-        self.goal_tolerance = goal_tolerance
-        RGRRTStar.__init__(self, start_state, compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)
+        R3T.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)

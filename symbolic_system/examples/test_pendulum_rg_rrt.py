@@ -3,10 +3,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.pendulum import Pendulum
-from rg_rrt_star.symbolic_system.symbolic_system_basic_rrt import SymbolicSystem_RGRRT
+from r3t.symbolic_system.symbolic_system_basic_rrt import SymbolicSystem_RGRRT
 from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope
 from pypolycontain.lib.operations import distance_point_polytope
-from rg_rrt_star.utils.visualization import visualize_node_tree_2D
+from r3t.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
 import os

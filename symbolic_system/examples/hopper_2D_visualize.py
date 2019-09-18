@@ -22,16 +22,16 @@ def hopper_plot(X,fig,ax, scaling_factor=0.1, alpha=0.5, xlim=None, ylim=None):
     theta *= -1
     phi *= -1
 
-    w_1=0.2*scaling_factor
-    w_2=0.2*scaling_factor
+    w_1=0.1*scaling_factor
+    w_2=0.1*scaling_factor
     h=0.2*scaling_factor
-    L=8*scaling_factor
-    a=3*scaling_factor
+    L=3*scaling_factor
+    a=1*scaling_factor
     alpha = alpha
     R=np.array([[np.cos(theta),-np.sin(theta)],[np.sin(theta),np.cos(theta)]])
     # Good now plot
-    ax.set_xlabel("x",fontsize=20)
-    ax.set_ylabel("y",fontsize=20)
+    ax.set_xlabel("x",fontsize=18)
+    ax.set_ylabel("y",fontsize=18)
     if xlim is not None:
         ax.set_xlim(xlim)
     if ylim is not None:

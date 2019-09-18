@@ -1,4 +1,4 @@
-from rg_rrt_star.common.rg_rrt_star import *
+from r3t.common.r3t import *
 from rtree import index
 import matplotlib.pyplot as plt
 from matplotlib import collections  as mc
@@ -323,7 +323,7 @@ class DC_ReachableSetTree(ReachableSetTree):
     def d_neighbor_ids(self, query_state):
         return self.tree.intersection([query_state[0],query_state[1],query_state[0],query_state[1]], objects=False)
 
-class DC_RGRRTStar(RGRRTStar):
+class DC_R3T(R3T):
     def __init__(self, root_state, point_collides_with_obstacle, random_sampler, rewire_radius):
         '''
         Dubin's car RG-RRT* problem setup.
@@ -334,4 +334,4 @@ class DC_RGRRTStar(RGRRTStar):
         '''
         def compute_reachable_set(state):
             return DC_ReachableSet(state,point_collides_with_obstacle)
-        RGRRTStar.__init__(self, root_state, compute_reachable_set, random_sampler, DC_ReachableSetTree, DC_StateTree, DC_ReachableSet, rewire_radius)
+        R3T.__init__(self, root_state, compute_reachable_set, random_sampler, DC_ReachableSetTree, DC_StateTree, DC_ReachableSet, rewire_radius)
