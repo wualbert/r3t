@@ -10,11 +10,12 @@ from closest_polytope.bounding_box.box import AH_polytope_to_box, \
 
 
 class PolytopeReachableSet(ReachableSet):
-    def __init__(self, parent_state, polytope_list, sys, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
+    def __init__(self, parent_state, polytope_list, sys=None, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
                  use_true_reachable_set=False, reachable_set_step_size=None, nonlinear_dynamic_step_size=1e-2):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
         try:
+            print "The number of polytopes is",len(polytope_list)
             self.aabb_list = [AH_polytope_to_box(p, return_AABB=True) for p in self.polytope_list]
         except TypeError:
             self.aabb_list = None
@@ -276,3 +277,11 @@ class SymbolicSystem_RGRRTStar(RGRRTStar):
                                             deterministic_next_state=deterministic_next_state, reachable_set_step_size=self.step_size, use_true_reachable_set=use_true_reachable_set,\
                                             nonlinear_dynamic_step_size=nonlinear_dynamic_step_size)
         RGRRTStar.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)
+        
+class Oracle_RGRRTStar(RGRRTStar):
+    def __init__(self, start_state, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False, \
+                 nonlinear_dynamic_step_size=1e-2, use_convex_hull=True, goal_tolerance = 1e-2):
+        self.step_size = step_size
+        self.contains_goal_function = contains_goal_function
+        self.goal_tolerance = goal_tolerance
+        RGRRTStar.__init__(self, start_state, compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)
