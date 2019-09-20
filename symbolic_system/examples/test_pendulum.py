@@ -21,7 +21,7 @@ input_samples = 9
 def test_pendulum_planning():
     initial_state = np.zeros(2)
 
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-input_limit],[input_limit]]), m=1, l=0.5, g=9.8, b=0.1)
+    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.5],[0.5]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
     step_size = 0.2 # 0.075

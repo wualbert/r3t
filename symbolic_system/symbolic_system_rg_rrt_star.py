@@ -10,11 +10,12 @@ from closest_polytope.bounding_box.box import AH_polytope_to_box, \
 
 
 class PolytopeReachableSet(ReachableSet):
-    def __init__(self, parent_state, polytope_list, sys, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
+    def __init__(self, parent_state, polytope_list, sys=None, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
                  use_true_reachable_set=False, reachable_set_step_size=None, nonlinear_dynamic_step_size=1e-2):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
         try:
+            print "The number of polytopes is",len(polytope_list)
             self.aabb_list = [AH_polytope_to_box(p, return_AABB=True) for p in self.polytope_list]
         except TypeError:
             self.aabb_list = None
