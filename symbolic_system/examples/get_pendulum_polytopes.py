@@ -19,7 +19,7 @@ reachable_set_epsilon = 0.5
 goal_tolerance = 5e-2
 input_limit = 1
 input_samples = 9
-max_iterations = 1
+max_iterations = 10
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
@@ -166,7 +166,7 @@ def test_pendulum_planning():
         #
         # if found_goal:
         #     break
-        allocated_time*=1
+        allocated_time*=2
 
         # store polytopes
         reachable_polytopes_clean = [[p.T, p.t, p.P.H, p.P.h] for p in reachable_polytopes]

@@ -15,7 +15,6 @@ class PolytopeReachableSet(ReachableSet):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
         try:
-            print "The number of polytopes is",len(polytope_list)
             self.aabb_list = [AH_polytope_to_box(p, return_AABB=True) for p in self.polytope_list]
         except TypeError:
             self.aabb_list = None

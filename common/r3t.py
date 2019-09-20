@@ -323,7 +323,6 @@ class R3T:
             while not sample_is_valid:
                 random_sample = self.sampler()
                 sample_count+=1
-                print("Number of Samples",sample_count)
                 # map the states to nodes
                 try:
                     nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1))  # FIXME: necessary to cast to list?

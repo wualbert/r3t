@@ -238,7 +238,7 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., 0, 0, 1.5, 0., 0
     duration = 0
     os.makedirs('RRT_Hopper_2d_'+experiment_name)
     max_iterations = 10
-    allocated_time = 10
+    allocated_time = 5
 
     for itr in range(max_iterations):
         start_time = time.time()
@@ -284,8 +284,9 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., 0, 0, 1.5, 0., 0
         plt.close()
 
         # store polytopes
+        reachable_polytopes_clean = [[p.T, p.t, p.P.H, p.P.h] for p in reachable_polytopes]
         with open('RRT_Hopper_2d_'+experiment_name+'/%.2f_seconds_reachable_sets.p' % duration, "wb") as f:
-            pickle.dump(reachable_polytopes, f)
+            pickle.dump(reachable_polytopes_clean, f)
         allocated_time*=2
 
 def staircase_ground_height_function(x):
