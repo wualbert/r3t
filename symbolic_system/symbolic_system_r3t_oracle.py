@@ -7,7 +7,8 @@ Created on Fri Sep 13 16:51:26 2019
 """
 
 import pydrake
-from rg_rrt_star.common.rg_rrt_star import *
+from r3t.common.r3t import *
+from r3t.symbolic_system.symbolic_system_r3t import PolytopePath
 from polytope_symbolic_system.common.symbolic_system import *
 from pypolycontain.lib.operations import distance_point_polytope
 from collections import deque
@@ -130,7 +131,7 @@ class PolytopeReachableSet(ReachableSet):
             return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state])
         return np.linalg.norm(self.parent_state-goal_state), deque([self.parent_state, goal_state]), self.deterministic_next_state
 
-class SymbolicSystem_RGRRTStar_new(RGRRTStar):
+class SymbolicSystem_R3T_Oracle(R3T):
     def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False, \
                  nonlinear_dynamic_step_size=1e-2, use_convex_hull=True, goal_tolerance = 1e-2):
         self.step_size = step_size
