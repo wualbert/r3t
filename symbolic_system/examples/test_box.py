@@ -172,16 +172,19 @@ def animate(X,ax1,fig,alpha):
     ax1.grid(color=(0,0,0), linestyle='--', linewidth=0.5)
     # The contact forces
 #    ax1.quiver([x-b*np.cos(theta)+a*np.sin(theta),x-b*np.cos(theta)+a*np.sin(theta)],[y-a*np.cos(theta)-b*np.sin(theta),y-a*np.cos(theta)-b*np.sin(theta)+U[0]],scale=10)
-  
-    
-fig,ax = plt.subplots()
-fig.set_size_inches(20, 16)
-ax.set_title(r"Reachable Box Poses after %0.1f Seconds (Explored %d Nodes)"%(total_time,rrt.node_tally),fontsize=45)
-for i in range(rrt.node_tally):
-    if True:
-        animate(all_states[i],ax,fig,alpha=0.02) 
 
-    
+  
+for H in [0,10,20,50,100,150,200,300,400,500,600,700,800,900,1000,1100,1172]:    
+    fig,ax = plt.subplots()
+    fig.set_size_inches(20, 16)
+    ax.set_title(r"Reachable Box Poses after Explored %d Nodes"%H,fontsize=45)
+#    for i in range(rrt.node_tally):
+    for i in range(H):
+        animate(all_states[i],ax,fig,alpha=0.7) 
+    fig.savefig('R3T_box_'+experiment_name+'/reachable_box_%d.png'%i, dpi=100)
+
+
+raise 1    
 """Back track and find a trajectory"""
 largest_theta=0
 for state in all_states:
