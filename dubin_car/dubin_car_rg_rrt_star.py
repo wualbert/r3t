@@ -12,8 +12,8 @@ import sys
 from dubin_car.base_reachable_set import *
 import dubins
 from time import time
-from closest_polytope.bounding_box.box import AABB, point_in_box
-from closest_polytope.visualization.visualize import visualize_boxes
+from closest_polytope_algorithms.bounding_box.box import AABB, point_in_box
+from closest_polytope_algorithms.visualization.visualize import visualize_boxes
 
 def wrap_angle(theta):
     theta %= 2*np.pi

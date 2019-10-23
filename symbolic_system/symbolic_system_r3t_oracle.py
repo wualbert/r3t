@@ -13,8 +13,8 @@ from polytope_symbolic_system.common.symbolic_system import *
 from pypolycontain.lib.operations import distance_point_polytope
 from collections import deque
 from rtree import index
-from closest_polytope.bounding_box.polytope_tree import PolytopeTree
-from closest_polytope.bounding_box.box import AH_polytope_to_box, \
+from closest_polytope_algorithms.bounding_box.polytope_tree import PolytopeTree
+from closest_polytope_algorithms.bounding_box.box import AH_polytope_to_box, \
     point_to_box_dmax, point_to_box_distance
     
 class PolytopeReachableSet(ReachableSet):
