@@ -3,7 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pydrake.symbolic as sym
 from timeit import default_timer
-from r3t.symbolic_system.symbolic_system_rg_rrt_star import *
+from r3t.symbolic_system.symbolic_system_r3t import *
 from r3t.symbolic_system.examples.hopper_2D_visualize import hopper_plot
 from r3t.utils.visualization import visualize_node_tree_hopper_2D, visualize_node_tree_2D
 from polytope_symbolic_system.examples.hopper_2d import Hopper_2d
