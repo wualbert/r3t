@@ -165,6 +165,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
     Polytopic reachable set with PolytopeTree
     '''
     def __init__(self, key_vertex_count = 0):
+        ReachableSetTree.__init__(self)
         self.polytope_tree = None
         self.id_to_reachable_sets = {}
         self.polytope_to_id = {}
