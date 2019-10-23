@@ -13,18 +13,18 @@ import os
 matplotlib.rcParams['font.family'] = "Times New Roman"
 matplotlib.rcParams.update({'font.size': 14})
 
-reachable_set_epsilon = 0.5
+reachable_set_epsilon = 2
 goal_tolerance = 5e-2
-input_limit = 0.25
+input_limit = 1
 input_samples = 9
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
 
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-0.5],[0.5]]), m=1, l=0.5, g=9.8, b=0.1)
+    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-input_limit],[input_limit]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
-    step_size = 0.2 # 0.075
+    step_size = 0.1 # 0.075
     nonlinear_dynamic_step_size=1e-2
     def uniform_sampler():
         rnd = np.random.rand(2)
@@ -86,10 +86,10 @@ def test_pendulum_planning():
 
     duration = 0
     os.makedirs('R3T_Pendulum_'+experiment_name)
-    allocated_time = 5
+    allocated_time = 0.1
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=False, allocated_time= allocated_time, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= allocated_time, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -110,16 +110,16 @@ def test_pendulum_planning():
             else:
                 goal_override = np.asarray([-np.pi, 0.0])
 
-        # # Plot state tree
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111)
-        # fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, goal_override=goal_override)
-        # # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
-        # # for explored_state in explored_states:
-        # #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
-        # ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
-        # ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
-        # ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
+        # Plot state tree
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, goal_override=goal_override)
+        # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
+        # for explored_state in explored_states:
+        #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
+        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
+        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
+        ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
         # ax.grid(True, which='both')
         # y_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
         # ax.yaxis.set_major_formatter(y_formatter)
@@ -141,9 +141,9 @@ def test_pendulum_planning():
         #
         # # # Plot explored reachable sets
         # # FIXME: Handle degenerated reachable set
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01)
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01, alpha=0.1)
 
         ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
         ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
@@ -152,18 +152,18 @@ def test_pendulum_planning():
         # ax.set_aspect('equal')
         plt.xlabel('$x$')
         plt.ylabel('$\dot{x}$')
-        plt.xlim([-4, 4])
-        plt.ylim([-10,10])
+        plt.xlim([-5, 5])
+        plt.ylim([-12,12])
         plt.tight_layout()
         plt.title('$|u| \leq %.2f$ Reachable Set after %.2fs (%d nodes)' %(input_limit, duration, len(polytope_reachable_sets)))
         plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
         # plt.show()
         plt.clf()
-        # plt.close()
+        plt.close()
         #
         # if found_goal:
         #     break
-        allocated_time*=5
+        # allocated_time*=5
 if __name__=='__main__':
     for i in range(1):
         test_pendulum_planning()

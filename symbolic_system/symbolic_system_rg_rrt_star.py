@@ -121,11 +121,13 @@ class PolytopeReachableSet(ReachableSet):
                          starting_state= state)
                     state_list.append(state)
                 except Exception as e:
-                    # print('Caught %s' %e)
+                    print('Caught %s' %e)
                     return np.ndarray.flatten(closest_point), True, np.asarray([])
                 # print step,state
             # print(state, closest_point)
             if save_true_dynamics_path:
+                if len(state_list)<=3:
+                    print('Warning: short true dynamics path')
                 return np.ndarray.flatten(state), False, np.asarray(state_list)
             else:
                 return np.ndarray.flatten(state), False, np.asarray([self.parent_state, np.ndarray.flatten(state)])

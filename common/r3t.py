@@ -406,6 +406,8 @@ class R3T:
                     if not is_extended:  # extension failed
                         break
                     nodes_to_add.append(new_node)
+                if iteration_count == max_nodes_to_add-1:
+                    print('Warning: hit max_nodes_to_add')
                 for new_node in nodes_to_add:
                     new_state_id = hash(str(new_node.state))
                     try:
@@ -467,6 +469,7 @@ class R3T:
                 continue
             cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(candidate_node.state)
             if candidate_node.cost_from_root > cost_to_go+new_node.cost_from_root:
+                print('rewired!')
                 candidate_node.update_parent(new_node, cost_to_go, path)
         return True
 

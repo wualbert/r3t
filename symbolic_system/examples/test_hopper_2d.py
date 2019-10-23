@@ -22,27 +22,27 @@ class Hopper2D_ReachableSet(PolytopeReachableSet):
         PolytopeReachableSet.__init__(self, parent_state, polytope_list, sys=sys, epsilon=epsilon, contains_goal_function=contains_goal_function, \
                                       use_true_reachable_set=True, reachable_set_step_size=reachable_set_step_size, nonlinear_dynamic_step_size=nonlinear_dynamic_step_size, deterministic_next_state=deterministic_next_state)
         self.ground_height_function = ground_height_function
-        self.body_attitude_limit = np.pi/2-1e-2
+        self.body_attitude_limit = np.pi/3-1e-2
         self.leg_attitude_limit = np.pi/3
         self.ground_height_function=ground_height_function
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
         #fixme: support collision checking
         #check for impossible configurations
         # tipped over
-        if goal_state[2]+goal_state[7]*2e-2>self.leg_attitude_limit or goal_state[2]+goal_state[7]*2e-2<-self.leg_attitude_limit:
-            # print('leg tipped over')
-            if return_deterministic_next_state:
-                return np.inf, None, None
-            else:
-                return np.inf, None
-
-        # # body attitude is off
-        # if goal_state[3]+goal_state[8]*2e-2>self.body_attitude_limit or goal_state[3]+goal_state[8]*2e-2<-self.body_attitude_limit:
-        #     # print('body attitude off')
+        # if goal_state[2]+goal_state[7]*2e-2>self.leg_attitude_limit or goal_state[2]+goal_state[7]*2e-2<-self.leg_attitude_limit:
+        #     # print('leg tipped over')
         #     if return_deterministic_next_state:
         #         return np.inf, None, None
         #     else:
         #         return np.inf, None
+
+        # body attitude is off
+        if goal_state[3]+goal_state[8]*2e-2>self.body_attitude_limit or goal_state[3]+goal_state[8]*2e-2<-self.body_attitude_limit:
+            # print('body attitude off')
+            if return_deterministic_next_state:
+                return np.inf, None, None
+            else:
+                return np.inf, None
 
         # stuck in the ground
         if goal_state[1]<self.ground_height_function(goal_state[0])-1 or goal_state[1]>self.ground_height_function(goal_state[0])+8:
@@ -364,41 +364,86 @@ def test_hopper_2d_planning(initial_state = np.asarray([0., 1., 0, 0, 1.5, 0., 0
                 plt.clf()
                 plt.close()
 
-        # if found_goal:
-        #     # save hopper animation
-        #     os.makedirs('RRT_Hopper_2d_' + experiment_name + '/goal_animation_%.2f_seconds' % duration)
-        #     # find state closest to goal
-        #     node = rrt.goal_node.parent
-        #     states_to_plot = [node.parent.state]
-        #     while node.parent is not None:
-        #         states_to_plot.extend(reversed(node.true_dynamics_path))
-        #         node = node.parent
-        #     states_to_plot.reverse()
-        #     #downsample
-        #     states_to_plot = states_to_plot[0::2]
-        #     states_to_plot.append(rrt.goal_node.parent.state)
-        #     for index, s in enumerate(states_to_plot):
-        #         fig = plt.figure()
-        #         ax = fig.add_subplot(111)
-        #         hopper_plot(s, fig, ax, scaling_factor=1, xlim=current_xlim, ylim=current_ylim, alpha=1)
-        #         # plot goal
-        #         plt.plot([goal_state[0], goal_state[0]], [current_ylim[0] - 1, 6], 'g--', lw=3, alpha=0.8)
-        #         # plot ground
-        #         x_samples = np.linspace(current_xlim[0] - 1, current_xlim[1] + 1, num=100)
-        #         vec_ground = np.vectorize(ground_height_function)
-        #         ax.plot(x_samples, vec_ground(x_samples), '-', linewidth=3, markersize=10, color='saddlebrown',
-        #                 alpha=0.5)
-        #         ax.set_xlim(current_xlim)
-        #         ax.set_ylim(bottom=current_ylim[0], top=5)
-        #         plt.xlabel('$x$(m)')
-        #         plt.ylabel('$y$(m)')
-        #         plt.tight_layout()
-        #         plt.savefig('RRT_Hopper_2d_' + experiment_name + '/goal_animation_%.2f_seconds/%i' % (duration, index), dpi=500)
-        #         plt.clf()
-        #         plt.close()
+        if found_goal:
+            # save hopper animation
+            os.makedirs('RRT_Hopper_2d_' + experiment_name + '/goal_animation_%.2f_seconds' % duration)
+            # find state closest to goal
+            node = rrt.goal_node.parent
+            # states_to_plot = [node.parent.state]
+            # while node.parent is not None:
+            #     states_to_plot.extend(reversed(node.true_dynamics_path))
+            #     node = node.parent
+            # states_to_plot.reverse()
+            states_to_plot = get_full_path_to_goal(rrt)
+            #downsample
+            states_to_plot = states_to_plot[0::2]
+            states_to_plot.append(rrt.goal_node.parent.state)
+            for index, s in enumerate(states_to_plot):
+                fig = plt.figure()
+                ax = fig.add_subplot(111)
+                hopper_plot(s, fig, ax, scaling_factor=1, xlim=current_xlim, ylim=current_ylim, alpha=1)
+                # plot goal
+                plt.plot([goal_state[0], goal_state[0]], [current_ylim[0] - 1, 8], 'g--', lw=3, alpha=0.8)
+                # plot ground
+                x_samples = np.linspace(current_xlim[0] - 1, current_xlim[1] + 1, num=100)
+                vec_ground = np.vectorize(ground_height_function)
+                ax.plot(x_samples, vec_ground(x_samples), '-', linewidth=3, markersize=10, color='saddlebrown',
+                        alpha=0.5)
+                ax.set_xlim(current_xlim)
+                ax.set_ylim(bottom=current_ylim[0], top=6)
+                plt.xlabel('$x$(m)')
+                plt.ylabel('$y$(m)')
+                plt.tight_layout()
+                plt.savefig('RRT_Hopper_2d_' + experiment_name + '/goal_animation_%.2f_seconds/' % duration + str(index).zfill(3), dpi=500)
+                plt.clf()
+                plt.close()
         # plt.show()
         if found_goal:
             break
+
+def get_full_path_to_goal(rrt):
+    '''
+    Temporary hack to get the full trajectory to the goal
+    :param rrt:
+    :return: list of states from start to goal
+    '''
+    path_states_set = set()
+    node = rrt.goal_node
+    while node.parent is not None:
+        path_states_set.add(str(node.parent.state))
+        node = node.parent
+
+    node_queue = deque([rrt.root_node])
+    i = 0
+    state_to_plot = [rrt.root_node.state]
+    while node_queue:
+        i+=1
+        node = node_queue.popleft()
+        #handle indexing
+        state = np.ndarray.flatten(node.state)
+        if str(state) not in path_states_set:
+            continue
+        #handle goal
+        # elif node==rrt.goal_node:
+        #     pass
+        last_state_to_plot = np.array(state_to_plot[-1])
+        true_dynamics_head = np.asarray(node.true_dynamics_path[0])
+        norm = np.linalg.norm(true_dynamics_head-last_state_to_plot)
+        if norm>0.1:
+            print('Warning: large spacing in true dynamics path')
+            # interpolate
+            interpolated_states = np.linspace(last_state_to_plot, state, rrt.step_size/rrt.nonlinear_dynamic_step_size)
+            state_to_plot.extend(interpolated_states)
+        else:
+            state_to_plot.extend(node.true_dynamics_path)
+        # if node.parent == rrt.root_node:
+        #     state_to_plot.append([np.ndarray.flatten(node.parent.state),
+        #                   np.ndarray.flatten(node.true_dynamics_path[0])])
+        if node.children is not None:
+            # print(len(node.children))
+            node_queue.extend(list(node.children))
+    return state_to_plot
+
 
 def staircase_ground_height_function(x):
     if isinstance(x, sym.Variable):
