@@ -135,29 +135,29 @@ class Node:
         '''
         self.children.update(new_children_and_paths)
 
-    def update_parent(self, new_parent=None, cost_self_from_parent=None, path_self_from_parent=None):
-        '''
-        updates the parent of the node
-        :param new_parent:
-        :return:
-        '''
-        if self.parent is not None and new_parent is not None:  #assigned a new parent
-            self.parent.children.remove(self)
-            self.parent = new_parent
-            self.parent.children.add(self)
-        #calculate new cost from root #FIXME: redundancy
-        assert(self.parent.reachable_set.contains(self.state))
-        cost_self_from_parent, path_self_from_parent = self.parent.reachable_set.plan_collision_free_path_in_set(self.state)
-        cost_root_to_parent = self.parent.cost_from_root
-        self.cost_from_parent = cost_self_from_parent
-        self.cost_from_root = cost_root_to_parent+self.cost_from_parent
-        self.path_from_parent = path_self_from_parent
-        #calculate new cost for children
-        for child in self.children:
-            child.update_parent()
-        # print(self.parent.state, 'path', self.path_from_parent)
-        # assert(np.all(self.parent.state==self.path_from_parent[0]))
-        # assert(np.all(self.state==self.path_from_parent[1]))
+    # def update_parent(self, new_parent=None, cost_self_from_parent=None, path_self_from_parent=None):
+    #     '''
+    #     updates the parent of the node
+    #     :param new_parent:
+    #     :return:
+    #     '''
+    #     if self.parent is not None and new_parent is not None:  #assigned a new parent
+    #         self.parent.children.remove(self)
+    #         self.parent = new_parent
+    #         self.parent.children.add(self)
+    #     #calculate new cost from root #FIXME: redundancy
+    #     assert(self.parent.reachable_set.contains(self.state))
+    #     cost_self_from_parent, path_self_from_parent = self.parent.reachable_set.plan_collision_free_path_in_set(self.state)
+    #     cost_root_to_parent = self.parent.cost_from_root
+    #     self.cost_from_parent = cost_self_from_parent
+    #     self.cost_from_root = cost_root_to_parent+self.cost_from_parent
+    #     self.path_from_parent = path_self_from_parent
+    #     #calculate new cost for children
+    #     for child in self.children:
+    #         child.update_parent()
+    #     # print(self.parent.state, 'path', self.path_from_parent)
+    #     # assert(np.all(self.parent.state==self.path_from_parent[0]))
+    #     # assert(np.all(self.state==self.path_from_parent[1]))
 
 class ReachableSetTree:
     '''

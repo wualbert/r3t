@@ -164,7 +164,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
     '''
     Polytopic reachable set with PolytopeTree
     '''
-    def __init__(self, key_vertex_count = 0):
+    def __init__(self, key_vertex_count = 0, distance_scaling_array=None):
         ReachableSetTree.__init__(self)
         self.polytope_tree = None
         self.id_to_reachable_sets = {}
@@ -174,13 +174,14 @@ class PolytopeReachableSetTree(ReachableSetTree):
         # self.state_id_to_state = {}
         # self.state_idx = None
         # self.state_tree_p = index.Property()
-
+        self.distance_scaling_array = distance_scaling_array
     def insert(self, state_id, reachable_set):
         try:
             iter(reachable_set.polytope_list)
             if self.polytope_tree is None:
                 self.polytope_tree = PolytopeTree(np.array(reachable_set.polytope_list),
-                                                  key_vertex_count=self.key_vertex_count)
+                                                  key_vertex_count=self.key_vertex_count,
+                                                  distance_scaling_array=self.distance_scaling_array)
                 # for d_neighbor_ids
                 # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
             else:
@@ -191,7 +192,8 @@ class PolytopeReachableSetTree(ReachableSetTree):
 
         except TypeError:
             if self.polytope_tree is None:
-                self.polytope_tree = PolytopeTree(np.atleast_1d([reachable_set.polytope_list]).flatten(), key_vertex_count=self.key_vertex_count)
+                self.polytope_tree = PolytopeTree(np.atleast_1d([reachable_set.polytope_list]).flatten(), key_vertex_count=self.key_vertex_count,
+                                                  distance_scaling_array=self.distance_scaling_array)
                 # for d_neighbor_ids
                 # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
             else:
@@ -203,15 +205,24 @@ class PolytopeReachableSetTree(ReachableSetTree):
         # self.state_idx.insert(state_id, np.repeat(reachable_set.parent_state, 2))
         # self.state_id_to_state[state_id] = reachable_set.parent_state
 
-    def nearest_k_neighbor_ids(self, query_state, k=1):
-        if k>1:
-            raise NotImplementedError
+    def nearest_k_neighbor_ids(self, query_state, k=1, return_state_projection = False):
+        if k is None:
+            if self.polytope_tree is None:
+                return None
+            # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
+            best_polytopes, best_distance, state_proejctions = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True, may_return_multiple=True)
+            if not return_state_projection:
+                return [self.polytope_to_id[bp] for bp in best_polytopes]
+            return [self.polytope_to_id[bp] for bp in best_polytopes], best_polytopes, best_distance, state_proejctions
+
         else:
             if self.polytope_tree is None:
                 return None
             # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
-            best_polytope = self.polytope_tree.find_closest_polytopes(query_state)[0]
-            return [self.polytope_to_id[best_polytope]]
+            best_polytope, best_distance, state_proejction = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True)
+            if not return_state_projection:
+                return [self.polytope_to_id[best_polytope[0]]]
+            return [self.polytope_to_id[best_polytope[0]]], best_polytope, [best_distance], [state_proejction]
 
     def d_neighbor_ids(self, query_state, d = np.inf):
         '''
@@ -224,22 +235,27 @@ class PolytopeReachableSetTree(ReachableSetTree):
         raise NotImplementedError
 
 class SymbolicSystem_StateTree(StateTree):
-    def __init__(self):
+    def __init__(self, distance_scaling_array=None):
         StateTree.__init__(self)
         self.state_id_to_state = {}
         self.state_tree_p = index.Property()
         self.state_idx = None
-
+        self.distance_scaling_array = distance_scaling_array
+        self.repeated_distance_scaling_array = np.tile(self.distance_scaling_array, 2)
     # delayed initialization to consider dimensions
     def initialize(self, dim):
         self.state_tree_p.dimension=dim
+        if self.distance_scaling_array is None:
+            self.distance_scaling_array = np.ones(dim, dtype='float')
         print('Symbolic System State Tree dimension is %d-D' % self.state_tree_p.dimension)
         self.state_idx = index.Index(properties=self.state_tree_p)
 
     def insert(self, state_id, state):
         if not self.state_idx:
             self.initialize(state.shape[0])
-        self.state_idx.insert(state_id, np.concatenate([state,state]))
+        scaled_state = np.multiply(self.distance_scaling_array,
+                                   state)
+        self.state_idx.insert(state_id, np.tile(scaled_state, 2))
         self.state_id_to_state[state_id] = state
 
     def state_ids_in_reachable_set(self, query_reachable_set):
@@ -248,11 +264,13 @@ class SymbolicSystem_StateTree(StateTree):
             state_ids_list = []
             for p in query_reachable_set.polytope_list:
                 lu = AH_polytope_to_box(p)
-                state_ids_list.extend(list(self.state_idx.intersection(lu)))
+                scaled_lu = np.multiply(self.distance_scaling_array,lu)
+                state_ids_list.extend(list(self.state_idx.intersection(scaled_lu)))
             return state_ids_list
         except TypeError:
             lu = AH_polytope_to_box(query_reachable_set.polytope_list)
-            return list(self.state_idx.intersection(lu))
+            scaled_lu = np.multiply(self.distance_scaling_array, lu)
+            return list(self.state_idx.intersection(scaled_lu))
 
 class SymbolicSystem_R3T(R3T):
     def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False, \
