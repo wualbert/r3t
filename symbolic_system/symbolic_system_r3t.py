@@ -241,12 +241,12 @@ class SymbolicSystem_StateTree(StateTree):
         self.state_tree_p = index.Property()
         self.state_idx = None
         self.distance_scaling_array = distance_scaling_array
-        self.repeated_distance_scaling_array = np.tile(self.distance_scaling_array, 2)
     # delayed initialization to consider dimensions
     def initialize(self, dim):
         self.state_tree_p.dimension=dim
         if self.distance_scaling_array is None:
             self.distance_scaling_array = np.ones(dim, dtype='float')
+            self.repeated_distance_scaling_array = np.tile(self.distance_scaling_array, 2)
         print('Symbolic System State Tree dimension is %d-D' % self.state_tree_p.dimension)
         self.state_idx = index.Index(properties=self.state_tree_p)
 
@@ -264,12 +264,12 @@ class SymbolicSystem_StateTree(StateTree):
             state_ids_list = []
             for p in query_reachable_set.polytope_list:
                 lu = AH_polytope_to_box(p)
-                scaled_lu = np.multiply(self.distance_scaling_array,lu)
+                scaled_lu = np.multiply(self.repeated_distance_scaling_array,lu)
                 state_ids_list.extend(list(self.state_idx.intersection(scaled_lu)))
             return state_ids_list
         except TypeError:
             lu = AH_polytope_to_box(query_reachable_set.polytope_list)
-            scaled_lu = np.multiply(self.distance_scaling_array, lu)
+            scaled_lu = np.multiply(self.repeated_distance_scaling_array, lu)
             return list(self.state_idx.intersection(scaled_lu))
 
 class SymbolicSystem_R3T(R3T):
