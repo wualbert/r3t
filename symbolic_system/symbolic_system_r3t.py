@@ -246,7 +246,7 @@ class SymbolicSystem_StateTree(StateTree):
         self.state_tree_p.dimension=dim
         if self.distance_scaling_array is None:
             self.distance_scaling_array = np.ones(dim, dtype='float')
-            self.repeated_distance_scaling_array = np.tile(self.distance_scaling_array, 2)
+        self.repeated_distance_scaling_array = np.tile(self.distance_scaling_array, 2)
         print('Symbolic System State Tree dimension is %d-D' % self.state_tree_p.dimension)
         self.state_idx = index.Index(properties=self.state_tree_p)
 
